@@ -50,10 +50,13 @@ The API is only 4 functions:
 import skypydb
 from datetime import datetime
 
+# setup skypydb client.
 client = skypydb.Client(path="./data/skypy.db")
 
+# Create collection. get_collection, get_or_create_collection, delete_collection also available.
 collection = client.create_collection("all-my-documents")
 
+# Add docs to the collection.
 collection.add(
     documents=[
         {
@@ -65,6 +68,7 @@ collection.add(
     ]
 )
 
+# Query/search results. You can also .get by the id of the document
 results = collection.query(
     query_texts=["This is a document"],
     n_results=1,
