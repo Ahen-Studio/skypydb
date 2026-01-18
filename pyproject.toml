@@ -1,0 +1,18 @@
+[project]
+name = "skypydb"
+dynamic = ["version"]
+
+authors = [{name = "Ahen-studio"}]
+description = "Open-source Reactive Python database"
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = ["Programming Language :: Python :: 3", "License :: OSI Approved :: Apache Software License", "Operating System :: OS Independent"]
+dependencies = []
+
+[project.urls]
+"Homepage" = "https://github.com/Ahen-Studio/skypy-db"
+"Bug Tracker" = "https://github.com/Ahen-Studio/skypy-db/issues"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
