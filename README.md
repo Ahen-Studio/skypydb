@@ -47,6 +47,28 @@ pip install -r requirements.txt # install dependencies
 The API is only 4 functions:
 
 ```python
+import skypydb
+from datetime import datetime
+
+client = skypydb.Client(path="./data/skypy.db")
+
+collection = client.create_collection("all-my-documents")
+
+collection.add(
+    documents=[
+        {
+            "user_id": None,
+            "message": "this is a document",
+            "details": None,
+            "creationtime": datetime.now().isoformat()
+        }
+    ]
+)
+
+results = collection.query(
+    query_texts=["This is a document"],
+    n_results=1,
+)
 ```
 
 Learn more on our [Docs](https://ahen.mintlify.app/)
