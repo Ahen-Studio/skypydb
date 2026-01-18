@@ -2,7 +2,7 @@
 name = "skypydb"
 dynamic = ["version"]
 
-authors = [{name = "Ahen-studio"}]
+authors = [{name = "Ahen Studio"}]
 description = "Open-source Reactive Python database"
 readme = "README.md"
 requires-python = ">=3.9"
