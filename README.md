@@ -21,15 +21,7 @@
 </p>
 
 ```bash
-git clone https://github.com/Ahen-Studio/skypy-db.git # python client
-```
-
-```bash
-cd skypy-db
-```
-
-```bash
-pip install -r requirements.txt # install dependencies
+pip install skypydb # python client
 ```
 
 ## Features
