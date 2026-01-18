@@ -24,6 +24,8 @@
 pip install skypydb # python client
 # or download from the source
 # git clone https://github.com/Ahen-Studio/skypy-db.git
+# cd skypy-db
+# pip install -r requirements.txt
 ```
 
 ## Features
