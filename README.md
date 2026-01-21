@@ -100,8 +100,8 @@ table.add(
     id=["auto"]# ids are automatically created by the backend.
 )
 
-# Keep the program running so the dashboard stays active
-client.wait()
+# Start the Dashboard
+client.start_dashboard()
 ```
 
 - use the api without a custom config
@@ -130,8 +130,8 @@ table.add(
     id=["auto"]# ids are automatically created by the backend
 )
 
-# Keep the program running so the dashboard stays active
-client.wait()
+# Start the Dashboard
+client.start_dashboard()
 ```
 
 ## Dashboard
@@ -145,8 +145,8 @@ client = skypydb.Client(path="./data/skypy.db")
 
 # ... your operations here ...
 
-# Keep the dashboard active
-client.wait()  # Dashboard accessible at http://127.0.0.1:3000
+# Start the Dashboard
+client.start_dashboard()  # Dashboard accessible at http://127.0.0.1:3000
 ```
 
 **Dashboard options:**
@@ -158,6 +158,13 @@ client = skypydb.Client(
     dashboard_port=8080
 )
 
+# ... your operations here ...
+
+# Start the Dashboard
+client.start_dashboard()
+```
+
+```python
 # Disable auto-start
 client = skypydb.Client(
     path="./data/skypy.db",
@@ -166,6 +173,9 @@ client = skypydb.Client(
 
 # Start manually later
 client.start_dashboard()
+
+# Kill the dashboard
+client.stop_dashboard()
 ```
 
 Learn more on our [Docs](https://ahen.mintlify.app/)

@@ -22,5 +22,5 @@ table.add(
     id=["auto"]# ids are automatically created by the backend
 )
 
-# Keep the program running so the dashboard stays active
-client.wait()
+# Start the Dashboard
+client.start_dashboard()
