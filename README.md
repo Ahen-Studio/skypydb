@@ -32,7 +32,9 @@ pip install skypydb # python client
 
 - Simple: fully-documented
 
-- Table: create, update, delete data from a table
+- Table: create, delete data from a table
+
+- Cli: command line interface for managing the database
 
 - Observable: Dashboard with real-time data, metrics, and query inspection
 
