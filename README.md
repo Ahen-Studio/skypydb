@@ -50,6 +50,10 @@ pip install skypydb # python client
 - [ ] write the documentation
 - [ ] code a custom cli
 
+## What's next!
+
+- give us ideas!
+
 ## Secure Implementation
 
 - first create a encryption key and make it available in .env file don't show this key to anyone
@@ -103,10 +107,6 @@ table.add(
 users = table.get_all()
 print(users[0]['ssn'])  # "123-45-6789" (decrypted)
 ```
-
-## What's next!
-
-- give us ideas!
 
 ## API
 
