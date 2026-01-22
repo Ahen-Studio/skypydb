@@ -2,7 +2,7 @@
 
 ## Encryption key
 
-- if you are using encryption, you should keep your encryption key secure and not share it with anyone.
+- If you are using encryption, keep your encryption key secure and do not share it with anyone.
 
 ## Supported Versions
 

@@ -6,8 +6,10 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-# Generate a secure encryption key
-encryption_key = os.getenv("ENCRYPTION_KEY") # create a encryption key and make it available in .env file don't show this key to anyone
+# Load encryption key from environment
+encryption_key = os.getenv("ENCRYPTION_KEY") # create a encryption key and make it available in .env file before using it, don't show this key to anyone
+if not encryption_key:
+    raise RuntimeError("ENCRYPTION_KEY is missing; encryption is disabled.")
 
 # Create encrypted database
 client = skypydb.Client(

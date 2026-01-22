@@ -10,8 +10,8 @@ classifiers = ["Programming Language :: Python :: 3", "License :: OSI Approved :
 dependencies = [
     "reflex>=0.8.25",
     "uvicorn>=0.23.0",
-    "cryptography>=41.0.0",
-    "dotenv>=0.21.1",
+    "cryptography>=43.0.1",
+    "python-dotenv>=0.21.1",
 ]
 
 [project.urls]

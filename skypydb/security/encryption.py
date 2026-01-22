@@ -29,6 +29,7 @@ class EncryptionManager:
         self,
         encryption_key: Optional[str] = None,
         iterations: int = 100000,
+        salt: Optional[bytes] = None,
     ):
         """
         Initialize encryption manager.
@@ -41,20 +42,23 @@ class EncryptionManager:
             EncryptionError: If cryptography library is not installed
         """
 
-        self.enabled = encryption_key is not None
+        if encryption_key is not None and not encryption_key.strip():
+            raise EncryptionError("encryption_key must be a non-empty string")
+        self.enabled = bool(encryption_key)
         self.iterations = iterations
+        self._salt = salt
         self._key: Optional[bytes] = None
 
         if self.enabled:
             # Derive a 256-bit key from the password
             assert encryption_key is not None  # Type narrowing for type checker
-            self._key = self._derive_key(encryption_key)
+            self._key = self._derive_key(encryption_key, salt=self._salt)
             self._aesgcm = AESGCM(self._key)
     
     def _derive_key(
         self,
         password: str,
-        salt: Optional[bytes] = None,
+        salt: Optional[bytes],
     ) -> bytes:
         """
         Derive a 256-bit encryption key from a password using PBKDF2.
@@ -69,8 +73,8 @@ class EncryptionManager:
         
         # Use a fixed application salt for key derivation
         # In production, you might want to store this securely or generate per-database
-        if salt is None:
-            salt = b"skypydb_encryption_salt_v1"
+        if not salt:
+            raise EncryptionError("A persistent, deployment-specific salt is required")
         
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
