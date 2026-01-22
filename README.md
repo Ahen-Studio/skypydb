@@ -58,6 +58,7 @@ pip install skypydb # python client
 
 ```python
 import skypydb
+from skypydb.errors import TableAlreadyExistsError
 
 # setup skypydb client.
 client = skypydb.Client(path="./data/skypy.db", auto_start_dashboard=False)
@@ -87,7 +88,7 @@ config = {
 # Create tables. get_table_from_config(config, table_name="all-my-documents"), delete_table_from_config(config, table_name="all-my-documents") are also available.
 try:
     table = client.create_table_from_config(config)# Create all the tables present in the config.
-except Exception:
+except TableAlreadyExistsError:
     # Tables already exist, that's fine
     pass
 
@@ -102,7 +103,7 @@ table.add(
     id=["auto"]# ids are automatically created by the backend.
 )
 
-# Blocking start (keeps dashboard running)
+# Start the Dashboard (blocking mode keeps it running)
 client.start_dashboard(block=True)
 ```
 
@@ -110,6 +111,7 @@ client.start_dashboard(block=True)
 
 ```python
 import skypydb
+from skypydb.errors import TableAlreadyExistsError
 
 # setup skypydb client.
 client = skypydb.Client(path="./data/skypy.db", auto_start_dashboard=False)
@@ -117,7 +119,7 @@ client = skypydb.Client(path="./data/skypy.db", auto_start_dashboard=False)
 # Create table. get_table, delete_table are also available.
 try:
     table = client.create_table("all-my-documents")
-except Exception:
+except TableAlreadyExistsError:
     # Tables already exist, that's fine
     pass
 
@@ -132,7 +134,7 @@ table.add(
     id=["auto"]# ids are automatically created by the backend
 )
 
-# Blocking start (keeps dashboard running)
+# Start the Dashboard (blocking mode keeps it running)
 client.start_dashboard(block=True)
 ```
 

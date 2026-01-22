@@ -13,7 +13,11 @@ class Table:
     Represents a table in the database.
     """
 
-    def __init__(self, db: Database, table_name: str):
+    def __init__(
+        self,
+        db: Database,
+        table_name: str,
+    ):
         """
         Initialize table.
         
@@ -28,7 +32,10 @@ class Table:
         if not self.db.table_exists(table_name):
             raise TableNotFoundError(f"Table '{table_name}' not found")
     
-    def add(self, **kwargs) -> List[str]:
+    def add(
+        self,
+        **kwargs,
+    ) -> List[str]:
         """
         Add data to the table.
         
@@ -84,7 +91,7 @@ class Table:
     def search(
         self,
         index: Optional[str] = None,
-        **filters
+        **filters,
     ) -> List[Dict[str, Any]]:
         """
         Search for data in the table.
@@ -113,14 +120,19 @@ class Table:
         
         return self.db.search(self.table_name, index=index, **processed_filters)
     
-    def get_all(self) -> List[Dict[str, Any]]:
+    def get_all(
+        self,
+    ) -> List[Dict[str, Any]]:
         """
         Get all data from the table.
         """
 
         return self.db.get_all_data(self.table_name)
     
-    def delete(self, **filters) -> int:
+    def delete(
+        self,
+        **filters,
+    ) -> int:
         """
         Delete data from the table based on filters.
         

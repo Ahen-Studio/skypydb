@@ -30,7 +30,9 @@ def get_all_tables() -> List[str]:
         db.close()
 
 
-def get_table_data(table_name: str) -> List[Dict]:
+def get_table_data(
+    table_name: str,
+) -> List[Dict]:
     """
     Get all data from a table.
     """
@@ -43,7 +45,9 @@ def get_table_data(table_name: str) -> List[Dict]:
         db.close()
 
 
-def get_table_schema(table_name: str) -> List[str]:
+def get_table_schema(
+    table_name: str,
+) -> List[str]:
     """
     Retrieve the column names for the specified table.
     

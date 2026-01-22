@@ -4,6 +4,7 @@ Database backend using SQLite.
 
 import sqlite3
 import uuid
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -16,7 +17,10 @@ class Database:
     Manages SQLite database connections and operations.
     """
 
-    def __init__(self, path: str):
+    def __init__(
+        self,
+        path: str,
+    ):
         """
         Initialize database connection.
 
@@ -27,10 +31,13 @@ class Database:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.conn = sqlite3.connect(str(self.path), check_same_thread=False)
-        self.conn.row_factory = sqlite3.Row  # Enable dict-like access
+        self.conn.row_factory = sqlite3.Row
         self._ensure_config_table()
 
-    def create_table(self, table_name: str) -> None:
+    def create_table(
+        self,
+        table_name: str,
+    ) -> None:
         """
         Create a new table with id and created_at columns.
 
@@ -62,7 +69,10 @@ class Database:
         )
         self.conn.commit()
 
-    def table_exists(self, table_name: str) -> bool:
+    def table_exists(
+        self,
+        table_name: str,
+    ) -> bool:
         """
         Check if a table exists.
         """
@@ -75,7 +85,10 @@ class Database:
         )
         return cursor.fetchone() is not None
 
-    def delete_table(self, table_name: str) -> None:
+    def delete_table(
+        self,
+        table_name: str,
+    ) -> None:
         """
         Delete a table.
 
@@ -94,7 +107,10 @@ class Database:
         cursor.execute(f"DROP TABLE [{table_name}]")
         self.conn.commit()
 
-    def get_table_columns(self, table_name: str) -> List[str]:
+    def get_table_columns(
+        self,
+        table_name: str,
+    ) -> List[str]:
         """
         Get list of column names for a table.
         """
@@ -107,7 +123,11 @@ class Database:
         cursor.execute(f"PRAGMA table_info([{table_name}])")
         return [row[1] for row in cursor.fetchall()]
 
-    def add_columns_if_needed(self, table_name: str, columns: List[str]) -> None:
+    def add_columns_if_needed(
+        self,
+        table_name: str,
+        columns: List[str],
+    ) -> None:
         """
         Add columns to a table if they don't exist.
 
@@ -127,10 +147,10 @@ class Database:
         self.conn.commit()
 
     def insert_data(
-        self, 
-        table_name: str, 
-        data: Dict[str, Any], 
-        generate_id: bool = True
+        self,
+        table_name: str,
+        data: Dict[str, Any],
+        generate_id: bool = True,
     ) -> str:
         """
         Insert data into a table.
@@ -176,9 +196,10 @@ class Database:
         return data["id"]
 
     def search(
-        self, table_name: str, 
-        index: Optional[str] = None, 
-        **filters
+        self,
+        table_name: str,
+        index: Optional[str] = None,
+        **filters,
     ) -> List[Dict[str, Any]]:
         """
         Search for data in a table.
@@ -241,7 +262,9 @@ class Database:
 
         return results
 
-    def get_all_tables(self) -> List[str]:
+    def get_all_tables(
+        self,
+    ) -> List[str]:
         """
         Get list of all table names.
         """
@@ -251,7 +274,10 @@ class Database:
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
         return [row[0] for row in cursor.fetchall()]
 
-    def get_all_data(self, table_name: str) -> List[Dict[str, Any]]:
+    def get_all_data(
+        self,
+        table_name: str,
+    ) -> List[Dict[str, Any]]:
         """
         Get all data from a table.
         """
@@ -269,7 +295,11 @@ class Database:
 
         return results
 
-    def delete_data(self, table_name: str, **filters) -> int:
+    def delete_data(
+        self,
+        table_name: str,
+        **filters,
+    ) -> int:
         """
         Delete data from a table based on filters.
 
@@ -324,7 +354,9 @@ class Database:
 
         return cursor.rowcount
 
-    def _ensure_config_table(self) -> None:
+    def _ensure_config_table(
+        self,
+    ) -> None:
         """
         Create the system table for storing table configurations if it doesn't exist.
         """
@@ -342,7 +374,11 @@ class Database:
         )
         self.conn.commit()
 
-    def save_table_config(self, table_name: str, config: Dict[str, Any]) -> None:
+    def save_table_config(
+        self,
+        table_name: str,
+        config: Dict[str, Any],
+    ) -> None:
         """
         Save a table's configuration to the system table.
 
@@ -350,8 +386,6 @@ class Database:
             table_name: Name of the table
             config: Configuration dictionary for the table
         """
-
-        import json
 
         # Normalize config to ensure types are strings for JSON serialization
         normalized_config = self._normalize_config(config)
@@ -367,7 +401,10 @@ class Database:
         )
         self.conn.commit()
 
-    def _normalize_config(self, config: Dict[str, Any]) -> Dict[str, str]:
+    def _normalize_config(
+        self,
+        config: Dict[str, Any],
+    ) -> Dict[str, str]:
         """
         Normalize configuration to ensure all types are strings for JSON serialization.
 
@@ -395,7 +432,10 @@ class Database:
 
         return normalized
 
-    def get_table_config(self, table_name: str) -> Optional[Dict[str, Any]]:
+    def get_table_config(
+        self,
+        table_name: str,
+    ) -> Optional[Dict[str, Any]]:
         """
         Retrieve a table's configuration from the system table.
 
@@ -405,8 +445,6 @@ class Database:
         Returns:
             Configuration dictionary or None if not found
         """
-
-        import json
 
         cursor = self.conn.cursor()
 
@@ -419,7 +457,11 @@ class Database:
             return json.loads(row[0])
         return None
 
-    def create_table_from_config(self, table_name: str, config: Dict[str, Any]) -> None:
+    def create_table_from_config(
+        self,
+        table_name: str,
+        config: Dict[str, Any],
+    ) -> None:
         """
         Create a table based on configuration.
 
@@ -470,7 +512,7 @@ class Database:
     def validate_data_with_config(
         self,
         table_name: str,
-        data: Dict[str, Any]
+        data: Dict[str, Any],
     ) -> Dict[str, Any]:
         """
         Validate data against the table's configuration.
@@ -533,7 +575,10 @@ class Database:
 
         return validated_data
 
-    def delete_table_config(self, table_name: str) -> None:
+    def delete_table_config(
+        self,
+        table_name: str,
+    ) -> None:
         """
         Delete a table's configuration from the system table.
 
@@ -546,7 +591,9 @@ class Database:
         cursor.execute("DELETE FROM _skypy_config WHERE table_name = ?", (table_name,))
         self.conn.commit()
 
-    def close(self) -> None:
+    def close(
+        self,
+    ) -> None:
         """
         Close database connection.
         """

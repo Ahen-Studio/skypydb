@@ -19,9 +19,9 @@ class Client:
 
     def __init__(
         self,
-        path: str, 
-        dashboard_port: int = 3000, 
-        auto_start_dashboard: bool = True
+        path: str,
+        dashboard_port: int = 3000,
+        auto_start_dashboard: bool = True,
     ):
         """
         Initialize SkypyDB client.
@@ -41,7 +41,10 @@ class Client:
         if auto_start_dashboard:
             self.start_dashboard(block=False)
 
-    def create_table(self, table_name: str) -> Table:
+    def create_table(
+        self,
+        table_name: str,
+    ) -> Table:
         """
         Create a new table.
 
@@ -61,7 +64,10 @@ class Client:
         self.db.create_table(table_name)
         return Table(self.db, table_name)
 
-    def get_table(self, table_name: str) -> Table:
+    def get_table(
+        self,
+        table_name: str,
+    ) -> Table:
         """
         Get an existing table.
 
@@ -79,7 +85,10 @@ class Client:
             raise TableNotFoundError(f"Table '{table_name}' not found")
         return Table(self.db, table_name)
 
-    def delete_table(self, table_name: str) -> None:
+    def delete_table(
+        self,
+        table_name: str,
+    ) -> None:
         """
         Delete a table.
 
@@ -98,7 +107,7 @@ class Client:
     def create_table_from_config(
         self,
         config: Dict[str, Any],
-        table_name: Optional[str] = None
+        table_name: Optional[str] = None,
     ) -> Union["Table", Dict[str, "Table"]]:
         """
         Create table(s) from configuration.
@@ -149,7 +158,11 @@ class Client:
                 table[name] = Table(self.db, name)
             return table
 
-    def get_table_from_config(self, config: Dict[str, Any], table_name: str) -> "Table":
+    def get_table_from_config(
+        self,
+        config: Dict[str, Any],
+        table_name: str,
+    ) -> "Table":
         """
         Get a table instance from configuration.
 
@@ -179,7 +192,11 @@ class Client:
 
         return Table(self.db, table_name)
 
-    def delete_table_from_config(self, config: Dict[str, Any], table_name: str) -> None:
+    def delete_table_from_config(
+        self,
+        config: Dict[str, Any],
+        table_name: str,
+    ) -> None:
         """
         Delete a table and its configuration.
 
@@ -209,7 +226,10 @@ class Client:
         self.db.delete_table(table_name)
         self.db.delete_table_config(table_name)
 
-    def start_dashboard(self, block: bool = True) -> None:
+    def start_dashboard(
+        self,
+        block: bool = True,
+    ) -> None:
         """
         Start the dashboard in a separate thread.
         
@@ -222,13 +242,26 @@ class Client:
         Example:
             # Non-blocking start (returns immediately)
             client = skypydb.Client(path="./data/skypy.db", auto_start_dashboard=True)
-            table = client.create_table("my-table")
-            table.add(data=["example"], id=["auto"])
+            
+            try:
+                table = client.create_table("all-my-documents")
+            except Exception:
+                # Tables already exist, that's fine
+                pass
+            
+            # Retrieve the table before adding any data.
+            table = client.get_table("all-my-documents")
+            
+            table.add(
+                title=["document"],
+                user_id=["user123"],
+                content=["this is a document"],
+                id=["auto"]# ids are automatically created by the backend
+            )
             
             # Or explicit non-blocking start
             client = skypydb.Client(path="./data/skypy.db", auto_start_dashboard=False)
             client.start_dashboard(block=False)
-            # Continue with other operations...
             
             # Blocking start (keeps dashboard running)
             client.start_dashboard(block=True)  # or just client.start_dashboard()
@@ -292,7 +325,9 @@ class Client:
                 print("\nStopping...")
                 self.close()
 
-    def stop_dashboard(self) -> None:
+    def stop_dashboard(
+        self,
+    ) -> None:
         """
         Stop the dashboard.
         
@@ -309,7 +344,9 @@ class Client:
             
         print("Dashboard stopped.")
 
-    def close(self) -> None:
+    def close(
+        self,
+    ) -> None:
         """
         Close database connection.
         """
