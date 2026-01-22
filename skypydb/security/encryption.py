@@ -10,7 +10,7 @@ from typing import Optional
 from ..errors import EncryptionError
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.backends import default_backend
 
 
@@ -32,26 +32,22 @@ class EncryptionManager:
     ):
         """
         Initialize encryption manager.
-        
+
         Args:
             encryption_key: Master encryption key/password. If None, encryption is disabled.
             iterations: Number of PBKDF2 iterations (default: 100000)
-            
+
         Raises:
             EncryptionError: If cryptography library is not installed
         """
-        
-        if encryption_key and not ENCRYPTION_AVAILABLE:
-            raise EncryptionError(
-                "Encryption requires 'cryptography' library."
-            )
-        
+
         self.enabled = encryption_key is not None
         self.iterations = iterations
         self._key: Optional[bytes] = None
-        
+
         if self.enabled:
             # Derive a 256-bit key from the password
+            assert encryption_key is not None  # Type narrowing for type checker
             self._key = self._derive_key(encryption_key)
             self._aesgcm = AESGCM(self._key)
     
@@ -76,7 +72,7 @@ class EncryptionManager:
         if salt is None:
             salt = b"skypydb_encryption_salt_v1"
         
-        kdf = PBKDF2(
+        kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,  # 256 bits
             salt=salt,
@@ -248,7 +244,7 @@ class EncryptionManager:
     ) -> str:
         """
         Create a secure hash of a password for storage.
-        Uses PBKDF2 with a random salt.
+        Uses PBKDF2HMAC with a random salt.
         
         Args:
             password: Password to hash
@@ -261,7 +257,7 @@ class EncryptionManager:
         salt = secrets.token_bytes(32)
         
         # Hash the password
-        kdf = PBKDF2(
+        kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=salt,
@@ -301,7 +297,7 @@ class EncryptionManager:
             stored_password_hash = combined[32:]
             
             # Hash the provided password with the same salt
-            kdf = PBKDF2(
+            kdf = PBKDF2HMAC(
                 algorithm=hashes.SHA256(),
                 length=32,
                 salt=salt,
