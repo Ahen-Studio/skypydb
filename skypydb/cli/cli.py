@@ -241,7 +241,7 @@ class InteractiveMenu:
             sys.exit(1)
 
         # show the dashboard url
-        print(f"Dashboard is running at http://127.0.0.1:'{self.dashboard_port}'")
+        print(f"Dashboard is running at http://127.0.0.1:{self.dashboard_port}")
         
         config = uvicorn.Config(
             app,

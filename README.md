@@ -44,11 +44,9 @@ pip install skypydb # python client
 
 ## TODO
 
-- [x] code the database backend
-- [x] improve user data security
-- [x] code a custom cli
+- [ ] Improve CLI: add --help/--version and generate schema.py + skypydb.db under _generated
+- [ ] Improve table creation: add create_table(from_schema=True); if False, return "Schema cannot be False"
 - [ ] Create the dashboard using Reflex
-- [ ] write the documentation
 
 ## What's next!
 
