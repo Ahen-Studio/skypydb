@@ -1,5 +1,5 @@
 """
-Client API for SkypyDB.
+Client API for Skypydb.
 """
 
 import threading
@@ -14,7 +14,7 @@ from ..table.table import Table
 
 class Client:
     """
-    Main client for interacting with SkypyDB.
+    Main client for interacting with Skypydb.
     """
 
     def __init__(
@@ -27,7 +27,7 @@ class Client:
         encrypted_fields: Optional[list] = None,
     ):
         """
-        Initialize SkypyDB client.
+        Initialize Skypydb client.
 
         Args:
             path: Path to SQLite database file
