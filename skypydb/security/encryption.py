@@ -1,5 +1,5 @@
 """
-Encryption module for securing sensitive data in SkypyDB.
+Encryption module for securing sensitive data in Skypydb.
 Uses AES-256-GCM for encryption with PBKDF2HMAC key derivation.
 """
 

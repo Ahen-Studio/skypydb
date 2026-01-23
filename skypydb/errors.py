@@ -2,7 +2,6 @@
 Custom exceptions for Skypydb.
 """
 
-
 # base errors handling
 class SkypydbError(Exception):
     """
