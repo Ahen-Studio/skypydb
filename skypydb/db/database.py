@@ -12,11 +12,14 @@ from typing import Any, Dict, List, Optional
 from ..errors import TableAlreadyExistsError, TableNotFoundError
 from ..security.encryption import EncryptionManager
 from ..security.validation import InputValidator, ValidationError
+from ..schema.schema import TableDefinition
 
 
 class Database:
     """
     Manages SQLite database connections and operations.
+    
+    All tables must be created via the schema system using defineSchema/defineTable.
     """
 
     def __init__(
@@ -24,70 +27,34 @@ class Database:
         path: str,
         encryption_key: Optional[str] = None,
         salt: Optional[bytes] = None,
-        encrypted_fields: Optional[List[str]] = None,
+        encrypted_fields: Optional[list] = None,
     ):
         """
-        Initialize database connection.
+        Initialize SQLite database.
 
         Args:
             path: Path to SQLite database file
-            encryption_key: Optional encryption key for data encryption.
-                           If provided, data will be encrypted at rest.
-            salt: Required, non-empty salt for PBKDF2HMAC when encryption is enabled.
-            encrypted_fields: Optional list of field names to encrypt.
-                             If None and encryption is enabled, all fields except
-                             'id' and 'created_at' will be encrypted.
+            encryption_key: Optional encryption key for data encryption
+            salt: Optional salt for encryption key derivation
+            encrypted_fields: Optional list of fields to encrypt
         """
+        self.path = path
+        self.encryption_key = encryption_key
+        self.salt = salt
+        self.encrypted_fields = encrypted_fields or []
 
-        self.path = Path(path)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.conn = sqlite3.connect(str(self.path), check_same_thread=False)
-        self.conn.row_factory = sqlite3.Row
-        
         # Initialize encryption manager
         self.encryption = EncryptionManager(encryption_key=encryption_key, salt=salt)
-        self.encrypted_fields = encrypted_fields
-        
+
+        # Create data directory if it doesn't exist
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+
+        # Connect to SQLite database
+        self.conn = sqlite3.connect(path, check_same_thread=False)
+        self.conn.row_factory = sqlite3.Row
+
+        # Ensure config table exists
         self._ensure_config_table()
-
-    def create_table(
-        self,
-        table_name: str,
-    ) -> None:
-        """
-        Create a new table with id and created_at columns.
-
-        Args:
-            table_name: Name of the table to create
-
-        Raises:
-            TableAlreadyExistsError: If table already exists
-            ValidationError: If table name is invalid
-        """
-        
-        # Validate table name
-        table_name = InputValidator.validate_table_name(table_name)
-
-        # Check if table exists
-        cursor = self.conn.cursor()
-
-        cursor.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-            (table_name,),
-        )
-        if cursor.fetchone():
-            raise TableAlreadyExistsError(f"Table '{table_name}' already exists")
-
-        # Create table with id and created_at columns
-        cursor.execute(
-            f"""
-            CREATE TABLE IF NOT EXISTS [{table_name}] (
-                id TEXT PRIMARY KEY,
-                created_at TEXT NOT NULL
-            )
-            """
-        )
-        self.conn.commit()
 
     def table_exists(
         self,
@@ -544,36 +511,39 @@ class Database:
             return json.loads(row[0])
         return None
 
-    def create_table_from_config(
+
+
+    def create_table_from_schema(
         self,
         table_name: str,
-        config: Dict[str, Any],
+        table_def: TableDefinition,
     ) -> None:
         """
-        Create a table based on configuration.
+        Create a table based on a TableDefinition from the schema system.
 
         Args:
-            table_name: Name of the table
-            config: Configuration dictionary with columns and types
+            table_name: Name of the table to create
+            table_def: TableDefinition containing columns and indexes
 
         Raises:
             TableAlreadyExistsError: If table already exists
-            ValidationError: If configuration is invalid
+            ValidationError: If table definition is invalid
 
         Example:
-            config = {
-                "title": "str",
-                "user_id": str,
-                "content": str,
-                "id": "auto"
-            }
+            table_def = defineTable({
+                "name": v.string(),
+                "email": v.string()
+            })
+            .index("by_email", ["email"])
+
+            db.create_table_from_schema("users", table_def)
         """
-        
+
         # Validate table name
         table_name = InputValidator.validate_table_name(table_name)
-        
-        # Validate config structure
-        for col_name in config.keys():
+
+        # Validate column names
+        for col_name in table_def.columns.keys():
             InputValidator.validate_column_name(col_name)
 
         if self.table_exists(table_name):
@@ -581,17 +551,11 @@ class Database:
 
         cursor = self.conn.cursor()
 
-        # Build column definitions
-        column_defs = []
-        for col_name, col_type in config.items():
-            if col_name == "id":
-                continue  # ID is handled separately
-            column_defs.append(f"[{col_name}] TEXT")
+        # Get SQL column definitions from table definition
+        sql_columns = table_def.get_sql_columns()
+        columns_sql = ", ".join(sql_columns)
 
-        # Create table with id, created_at, and configured columns
-        columns_sql = ", ".join(
-            ["id TEXT PRIMARY KEY", "created_at TEXT NOT NULL"] + column_defs
-        )
+        # Create table
         cursor.execute(
             f"""
             CREATE TABLE [{table_name}] (
@@ -600,9 +564,64 @@ class Database:
             """
         )
 
-        # Save configuration
+        # Create indexes
+        for index_sql in table_def.get_sql_indexes():
+            cursor.execute(index_sql)
+
+        # Save table definition as configuration
+        config = self._table_def_to_config(table_def)
         self.save_table_config(table_name, config)
         self.conn.commit()
+
+    def _table_def_to_config(
+        self,
+        table_def: TableDefinition,
+    ) -> Dict[str, Any]:
+        """
+        Convert a TableDefinition to a config dictionary for storage.
+
+        Args:
+            table_def: TableDefinition to convert
+
+        Returns:
+            Configuration dictionary
+        """
+        config = {}
+
+        # Convert validators to type strings
+        for col_name, validator in table_def.columns.items():
+            validator_repr = repr(validator)
+            
+            # Map validator repr to config type
+            if "v.string()" in validator_repr:
+                config[col_name] = "str"
+            elif "v.int64()" in validator_repr:
+                config[col_name] = "int"
+            elif "v.float64()" in validator_repr:
+                config[col_name] = "float"
+            elif "v.boolean()" in validator_repr:
+                config[col_name] = "bool"
+            elif "v.optional(" in validator_repr:
+                # Extract the base type from optional
+                if "v.string()" in validator_repr:
+                    config[col_name] = {"type": "str", "optional": True}
+                elif "v.int64()" in validator_repr:
+                    config[col_name] = {"type": "int", "optional": True}
+                elif "v.float64()" in validator_repr:
+                    config[col_name] = {"type": "float", "optional": True}
+                elif "v.boolean()" in validator_repr:
+                    config[col_name] = {"type": "bool", "optional": True}
+            else:
+                config[col_name] = "str"  # Default
+
+        # Add index information
+        if table_def.indexes:
+            config["_indexes"] = [
+                {"name": idx["name"], "fields": idx["fields"]}
+                for idx in table_def.indexes
+            ]
+
+        return config
 
     def validate_data_with_config(
         self,
@@ -705,6 +724,7 @@ class Database:
         Returns:
             Dictionary with encrypted fields
         """
+        
         if not self.encryption.enabled:
             return data
 
@@ -736,6 +756,7 @@ class Database:
         Returns:
             Dictionary with decrypted fields
         """
+        
         if not self.encryption.enabled:
             return data
 

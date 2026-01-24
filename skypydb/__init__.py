@@ -16,7 +16,8 @@ from .security import (
     create_encryption_manager,
 )
 
-__version__ = "0.1.3"
+__version__ = "0.1.6"
+
 __all__ = [
     "Client",
     "SkypydbError",

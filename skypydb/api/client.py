@@ -2,16 +2,22 @@
 Client API for Skypydb.
 """
 
-from typing import Any, Dict, Optional, Union
+import importlib
+import importlib.util
+import os
+from types import ModuleType
+from typing import Dict, Optional
 
 from ..db.database import Database
 from ..errors import TableAlreadyExistsError, TableNotFoundError
 from ..table.table import Table
+from ..schema import Schema
 
 
 class Client:
     """
     Main client for interacting with Skypydb.
+    All tables must be defined in skypydb/schema.py using the schema system.
     """
 
     def __init__(
@@ -40,7 +46,9 @@ class Client:
             
             # With encryption (all fields encrypted by default)
             from skypydb.security import EncryptionManager
+            
             key = EncryptionManager.generate_key()
+            
             client = skypydb.Client(
                 path="./data/skypy.db",
                 encryption_key=key
@@ -57,35 +65,91 @@ class Client:
         self.path = path
         self.db = Database(path, encryption_key=encryption_key, salt=salt, encrypted_fields=encrypted_fields)
 
-    def create_table(
-        self,
-        table_name: str,
-    ) -> Table:
+    def create_table(self) -> Dict[str, Table]:
         """
-        Create a new table.
-
-        Args:
-            table_name: Name of the table to create
+        Create all tables defined in skypydb/schema.py.
+        
+        This method reads the schema from skypydb/schema.py and creates all tables
+        with their columns, types, and indexes as defined in the schema.
 
         Returns:
-            Table instance
+            Dictionary mapping table names to Table instances
 
         Raises:
-            TableAlreadyExistsError: If table already exists
+            TableAlreadyExistsError: If any table already exists
+            ValueError: If schema file is missing or invalid
+        
+        Example:
+            # Define your schema in skypydb/schema.py, then:
+            client = skypydb.Client(path="./data/mydb.db")
+            tables = client.create_table()
+            
+            # Access tables
+            users_table = tables["users"]
+            posts_table = tables["posts"]
         """
+        
+        try:
+            # Import schema module (package) first
+            schema_module = importlib.import_module("skypydb.schema")
+        except ImportError:
+            raise ValueError(
+                "Schema file not found at skypydb/schema.py. "
+                "Please create a schema.py file with a schema definition."
+            )
+        
+        # Try to get schema object from the module
+        schema = getattr(schema_module, "schema", None)
 
-        if self.db.table_exists(table_name):
-            raise TableAlreadyExistsError(f"Table '{table_name}' already exists")
+        # If we got a module (name collision with package), load schema.py explicitly
+        if schema is None or isinstance(schema, ModuleType):
+            package_root = os.path.dirname(os.path.dirname(__file__))
+            schema_path = os.path.join(package_root, "schema.py")
+            if os.path.exists(schema_path):
+                spec = importlib.util.spec_from_file_location("skypydb._schema_file", schema_path)
+                if spec and spec.loader:
+                    module = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(module)
+                    schema = getattr(module, "schema", None)
 
-        self.db.create_table(table_name)
-        return Table(self.db, table_name)
+        if schema is None:
+            raise ValueError(
+                "No 'schema' object found in skypydb/schema.py. "
+                "Please define a schema using: schema = defineSchema({...})"
+            )
+        
+        if not isinstance(schema, Schema):
+            raise ValueError(
+                f"Expected a Schema object, got {type(schema).__name__}"
+            )
+        
+        # Create all tables from schema
+        created_tables: Dict[str, Table] = {}
+        table_names = schema.get_all_table_names()
+        
+        for table_name in table_names:
+            table_def = schema.get_table_definition(table_name)
+            if table_def is None:
+                continue
+            
+            # Check if table already exists
+            if self.db.table_exists(table_name):
+                raise TableAlreadyExistsError(
+                    f"Table '{table_name}' already exists in the database"
+                )
+            
+            # Create table with schema definition
+            self.db.create_table_from_schema(table_name, table_def)
+            created_tables[table_name] = Table(self.db, table_name)
+        
+        return created_tables
 
     def get_table(
         self,
         table_name: str,
     ) -> Table:
         """
-        Get an existing table.
+        Get an existing table by name.
 
         Args:
             table_name: Name of the table
@@ -95,6 +159,13 @@ class Client:
 
         Raises:
             TableNotFoundError: If table doesn't exist
+            
+        Example:
+            tables = client.create_table()
+            users_table = tables["users"]
+            
+            # Later, get the table again:
+            users = client.get_table("users")
         """
 
         if not self.db.table_exists(table_name):
@@ -106,136 +177,17 @@ class Client:
         table_name: str,
     ) -> None:
         """
-        Delete a table.
-
-        Args:
-            table_name: Name of the table to delete
-
-        Raises:
-            TableNotFoundError: If table doesn't exist
-        """
-
-        self.db.delete_table(table_name)
-
-        # Also delete the configuration
-        self.db.delete_table_config(table_name)
-
-    def create_table_from_config(
-        self,
-        config: Dict[str, Any],
-        table_name: Optional[str] = None,
-    ) -> Union["Table", Dict[str, "Table"]]:
-        """
-        Create table(s) from configuration.
-
-        Args:
-            config: Configuration dictionary with table definitions
-                    Format: {"table_name": {"col1": "str", "col2": "int", "id": "auto"}, ...}
-            table_name: If provided, only create this specific table from the config
-
-        Returns:
-            Table instance if table_name is provided, otherwise dictionary of table_name -> Table
-
-        Example:
-            config = {
-                "users": {
-                    "name": "str",
-                    "email": "str",
-                    "age": int,
-                    "id": "auto"
-                },
-                "posts": {
-                    "title": "str",
-                    "content": "str",
-                    "id": "auto"
-                }
-            }
-
-            # Create all tables
-            table = client.create_table_from_config(config)
-
-            # Create only 'users' table
-            table = client.create_table_from_config(config, table_name="users")
-        """
-
-        if table_name is not None:
-            # Create single table
-            if table_name not in config:
-                raise KeyError(f"Table '{table_name}' not found in config")
-
-            table_config = config[table_name]
-            self.db.create_table_from_config(table_name, table_config)
-            return Table(self.db, table_name)
-        else:
-            # Create all tables
-            table = {}
-            for name, table_config in config.items():
-                self.db.create_table_from_config(name, table_config)
-                table[name] = Table(self.db, name)
-            return table
-
-    def get_table_from_config(
-        self,
-        config: Dict[str, Any],
-        table_name: str,
-    ) -> "Table":
-        """
-        Get a table instance from configuration.
-
-        This method retrieves an existing table. It doesn't create the table if it doesn't exist.
-
-        Args:
-            config: Configuration dictionary (for reference/validation)
-            table_name: Name of the table to retrieve
-
-        Returns:
-            Table instance
-
-        Raises:
-            TableNotFoundError: If table doesn't exist
-
-        Example:
-            config = {
-                "users": {
-                    "name": "str",
-                    "email": "str"
-                }
-            }
-            table = client.get_table_from_config(config, "users")
-        """
-        
-        if not self.db.table_exists(table_name):
-            raise TableNotFoundError(f"Table '{table_name}' not found")
-
-        return Table(self.db, table_name)
-
-    def delete_table_from_config(
-        self,
-        config: Dict[str, Any],
-        table_name: str,
-    ) -> None:
-        """
         Delete a table and its configuration.
 
         Args:
-            config: Configuration dictionary (for reference)
             table_name: Name of the table to delete
 
         Raises:
             TableNotFoundError: If table doesn't exist
-
+            
         Example:
-            config = {
-                "users": {
-                    "name": "str",
-                    "email": "str"
-                }
-            }
-            client.delete_table_from_config(config, "users")
+            client.delete_table("users")
         """
-
-        if table_name not in config:
-            raise KeyError(f"Table '{table_name}' not found in config")
 
         if not self.db.table_exists(table_name):
             raise TableNotFoundError(f"Table '{table_name}' not found")
@@ -243,11 +195,12 @@ class Client:
         self.db.delete_table(table_name)
         self.db.delete_table_config(table_name)
 
-    def close(
-        self,
-    ) -> None:
+    def close(self) -> None:
         """
         Close database connection.
+        
+        Example:
+            client.close()
         """
 
         self.db.close()

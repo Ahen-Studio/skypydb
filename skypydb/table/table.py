@@ -88,6 +88,44 @@ class Table:
         
         return inserted_ids
     
+    def delete(
+        self,
+        **filters,
+    ) -> int:
+        """
+        Delete data from the table based on filters.
+        
+        Args:
+            **filters: Filters as keyword arguments (column name = value or list of values)
+            
+        Returns:
+            Number of rows deleted
+            
+        Example:
+            # Delete by ID
+            table.delete(
+                id="123"
+            )
+            
+            # Delete by multiple criteria
+            table.delete(
+                user_id="user123",
+                title="document"
+            )
+            
+            # Delete with list values (uses IN clause)
+            table.delete(
+                title=["doc1", "doc2"]
+            )
+        """
+        
+        # Convert list filters if needed
+        processed_filters = {}
+        for key, value in filters.items():
+            processed_filters[key] = value
+        
+        return self.db.delete_data(self.table_name, **processed_filters)
+    
     def search(
         self,
         index: Optional[str] = None,
@@ -128,41 +166,3 @@ class Table:
         """
 
         return self.db.get_all_data(self.table_name)
-    
-    def delete(
-        self,
-        **filters,
-    ) -> int:
-        """
-        Delete data from the table based on filters.
-        
-        Args:
-            **filters: Filters as keyword arguments (column name = value or list of values)
-            
-        Returns:
-            Number of rows deleted
-            
-        Example:
-            # Delete by ID
-            table.delete(
-                id="123"
-            )
-            
-            # Delete by multiple criteria
-            table.delete(
-                user_id="user123",
-                title="document"
-            )
-            
-            # Delete with list values (uses IN clause)
-            table.delete(
-                title=["doc1", "doc2"]
-            )
-        """
-        
-        # Convert list filters if needed
-        processed_filters = {}
-        for key, value in filters.items():
-            processed_filters[key] = value
-        
-        return self.db.delete_data(self.table_name, **processed_filters)

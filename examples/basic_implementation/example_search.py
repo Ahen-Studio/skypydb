@@ -1,32 +1,22 @@
 import skypydb
-from skypydb.errors import TableAlreadyExistsError
 
-# setup skypydb client.
-client = skypydb.Client(path="./data/skypy.db")
+# Create a client
+client = skypydb.Client(path="./skypydb/skypydb.db")
 
-# Create table. get_table, delete_table are also available.
-try:
-    table = client.create_table("all-my-documents")
-except TableAlreadyExistsError:
-    # Tables already exist, that's fine
-    pass
+# Create tables from the schema
+# This reads the schema from skypydb/schema.py and creates all tables
+tables = client.create_table()
 
-# Retrieve the table before adding any data.
-table = client.get_table("all-my-documents")
+# Access your tables
+success_table = tables["success"]
+warning_table = tables["warning"]
+error_table = tables["error"]
 
 # before searching you need to add data to the table
-#table.add(
-#    user_id=["user123"],
-#    title=["document"],
-#    content=["this is a document"],
-#    id=["auto"]# ids are automatically created by the backend.
-#)
-
-# Search results. search data assuming they are already in the table. You can also search the data by the id of the document
-results = table.search(
-    index="user123",# search the corresponding data by their index
-    title=["document"]# search the corresponding data by their title
-    #id=["***"]
+# Search results. search data assuming they are already data in the table.
+user_success_logs = success_table.search(
+    index="by_user",
+    user_id="user123"
 )
-for result in results:
-    print(result)
+for user_success_logs in user_success_logs:
+    print(user_success_logs)

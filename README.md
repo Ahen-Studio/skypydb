@@ -48,7 +48,6 @@ pip install skypydb # python client
 ## TODO
 
 - [ ] Improve CLI: add --help/--version and generate schema.py + skypydb.db under _generated
-- [ ] Improve table creation: add create_table(from_schema=True); if False, return "Schema cannot be False"
 - [ ] Create the dashboard using Reflex
 
 ## What's next!
@@ -65,11 +64,136 @@ skypydb dev
 
 - run this command in your terminal
 
-## Secure Implementation
+## API
 
-- first create a encryption key and make it available in .env file don't show this key to anyone
+- use the api to interact with your database, before using it, make sure to create add a schema to create your tables
 
 ```python
+"""
+Schema definition for Skypydb database tables.
+This file defines all tables, their columns, types, and indexes.
+"""
+
+from skypydb.schema import defineSchema, defineTable
+from skypydb.schema.values import v
+
+# Define the schema with all tables
+schema = defineSchema({
+    
+    # Table pour les logs de succès
+    "success": defineTable({
+        "component": v.string(),
+        "action": v.string(),
+        "message": v.string(),
+        "details": v.optional(v.string()),
+        "user_id": v.optional(v.string()),
+    })
+    .index("by_component", ["component"])
+    .index("by_action", ["action"])
+    .index("by_user", ["user_id"])
+    .index("by_component_and_action", ["component", "action"]),
+
+    # Table pour les logs d'avertissement
+    "warning": defineTable({
+        "component": v.string(),
+        "action": v.string(),
+        "message": v.string(),
+        "details": v.optional(v.string()),
+        "user_id": v.optional(v.string()),
+    })
+    .index("by_component", ["component"])
+    .index("by_action", ["action"])
+    .index("by_user", ["user_id"])
+    .index("by_component_and_action", ["component", "action"]),
+
+    # Table pour les logs d'erreur
+    "error": defineTable({
+        "component": v.string(),
+        "action": v.string(),
+        "message": v.string(),
+        "details": v.optional(v.string()),
+        "user_id": v.optional(v.string()),
+    })
+    .index("by_component", ["component"])
+    .index("by_action", ["action"])
+    .index("by_user", ["user_id"])
+    .index("by_component_and_action", ["component", "action"]),
+})
+```
+
+- after creating the schema file containing the tables, you can add data to your database
+
+```python
+import skypydb
+
+# Create a client
+client = skypydb.Client(path="./skypydb/skypydb.db")
+
+# Create tables from the schema
+# This reads the schema from skypydb/schema.py and creates all tables
+tables = client.create_table()
+
+# Access your tables
+success_table = tables["success"]
+warning_table = tables["warning"]
+error_table = tables["error"]
+
+# Insert data
+# Insert success logs
+success_table.add(
+    component="AuthService",
+    action="login",
+    message="User logged in successfully",
+    user_id="user123"
+)
+
+# Insert warning logs
+warning_table.add(
+    component="AuthService",
+    action="login_attempt",
+    message="Multiple failed login attempts",
+    user_id="user456",
+    details="5 failed attempts in 5 minutes"
+)
+
+# Insert error logs
+error_table.add(
+    component="DatabaseService",
+    action="connection",
+    message="Connection timeout",
+    user_id="system",
+    details="Timeout after 30 seconds"
+)
+```
+
+- after adding data to your database you can search specific data using the search method
+
+```python
+user_success_logs = success_table.search(
+    index="by_user",
+    user_id="user123"
+)
+for user_success_logs in user_success_logs:
+    print(user_success_logs)
+```
+
+- you can also delete specific data from your database using the delete method
+
+```python
+success_table.delete(
+    component="AuthService",
+    user_id="user123"
+)
+```
+
+### Secure Implementation
+
+- first create a encryption key and make it available in .env file don't show this key to anyone, you can use the cli to generate these keys
+
+```python
+# you can generate a secure encryption key and salt using the cli
+# or generate a secure encryption key and salt using the this example code
+
 from skypydb.security import EncryptionManager
 
 # Generate a secure encryption key
@@ -84,7 +208,6 @@ print(salt) # don't show this salt to anyone
 ```python
 import os
 import skypydb
-from skypydb.errors import TableAlreadyExistsError
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -101,116 +224,35 @@ salt_bytes = salt_key.encode("utf-8")
 
 # Create encrypted database
 client = skypydb.Client(
-    path="./data/secure.db",
+    path="./skypydb/skypydb.db",
     encryption_key=encryption_key,
     salt=salt_bytes,
-    encrypted_fields=["password", "ssn", "credit_card"]  # Optional: encrypt only sensitive fields
+    encrypted_fields=["user_id"]  # Optional: encrypt only sensitive fields
 )
 
 # All operations work the same - encryption is transparent!
-try:
-    table = client.create_table("users")# Create the table.
-except TableAlreadyExistsError:
-    # Tables already exist, that's fine
-    pass
-    
-table = client.get_table("users")
+tables = client.create_table()
+
+# Access your tables
+success_table = tables["success"]
+warning_table = tables["warning"]
+error_table = tables["error"]
 
 # Automatically encrypted
-table.add(
-    username=["alice"],
-    email=["alice@example.com"],
-    ssn=["123-45-6789"]  # only this field is if encrypted_fields is not None encrypted
+success_table.add(
+    component="AuthService",
+    action="login",
+    message="User logged in successfully",
+    user_id="user123" # only this field is encrypted if encrypted_fields is not None
 )
 
 # Data is automatically decrypted when retrieved
-results = table.search(
-    index="alice"# search the corresponding data by their index
+user_success_logs = success_table.search(
+    index="by_user",
+    user_id="user123"
 )
-for result in results:
-    print(result)
-```
-
-## API
-
-- use the api with a custom config
-
-```python
-import skypydb
-from skypydb.errors import TableAlreadyExistsError
-
-# setup skypydb client.
-client = skypydb.Client(path="./data/skypy.db")
-
-# config to make custom table.
-config = {
-    "all-my-documents": {
-        "title": "str",
-        "user_id": str,
-        "content": str,
-        "id": "auto"
-    },
-    "all-my-documents1": {
-        "title": "str",
-        "user_id": str,
-        "content": str,
-        "id": "auto"
-    },
-    "all-my-documents2": {
-        "title": "str",
-        "user_id": str,
-        "content": str,
-        "id": "auto"
-    },
-}
-
-# Create tables. get_table_from_config(config, table_name="all-my-documents"), delete_table_from_config(config, table_name="all-my-documents") are also available.
-try:
-    table = client.create_table_from_config(config)# Create all the tables present in the config.
-except TableAlreadyExistsError:
-    # Tables already exist, that's fine
-    pass
-
-# Retrieve the table before adding any data.
-table = client.get_table_from_config(config, table_name="all-my-documents")
-
-# Add data to a table.
-table.add(
-    title=["document"],
-    user_id=["user123"],
-    content=["this is a document"],
-    id=["auto"]# ids are automatically created by the backend.
-)
-
-```
-
-- use the api without a custom config
-
-```python
-import skypydb
-from skypydb.errors import TableAlreadyExistsError
-
-# setup skypydb client.
-client = skypydb.Client(path="./data/skypy.db")
-
-# Create table. get_table, delete_table are also available.
-try:
-    table = client.create_table("all-my-documents")
-except TableAlreadyExistsError:
-    # Tables already exist, that's fine
-    pass
-
-# Retrieve the table before adding any data.
-table = client.get_table("all-my-documents")
-
-# Add data to the table.
-table.add(
-    title=["document"],
-    user_id=["user123"],
-    content=["this is a document"],
-    id=["auto"]# ids are automatically created by the backend
-)
-
+for user_success_logs in user_success_logs:
+    print(user_success_logs)
 ```
 
 Learn more on our [Docs](https://ahen.mintlify.app/)

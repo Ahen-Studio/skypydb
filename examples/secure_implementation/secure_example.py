@@ -1,6 +1,5 @@
 import os
 import skypydb
-from skypydb.errors import TableAlreadyExistsError
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -17,31 +16,32 @@ salt_bytes = salt_key.encode("utf-8")
 
 # Create encrypted database
 client = skypydb.Client(
-    path="./data/secure.db",
+    path="./skypydb/skypydb.db",
     encryption_key=encryption_key,
     salt=salt_bytes,
-    encrypted_fields=["password", "ssn", "credit_card"]  # Optional: encrypt only sensitive fields
+    encrypted_fields=["user_id"]  # Optional: encrypt only sensitive fields
 )
 
 # All operations work the same - encryption is transparent!
-try:
-    table = client.create_table("users")# Create the table.
-except TableAlreadyExistsError:
-    # Tables already exist, that's fine
-    pass
-    
-table = client.get_table("users")
+tables = client.create_table()
+
+# Access your tables
+success_table = tables["success"]
+warning_table = tables["warning"]
+error_table = tables["error"]
 
 # Automatically encrypted
-table.add(
-    username=["alice"],
-    email=["alice@example.com"],
-    ssn=["123-45-6789"]  # only this field is if encrypted_fields is not None encrypted
+success_table.add(
+    component="AuthService",
+    action="login",
+    message="User logged in successfully",
+    user_id="user123" # only this field is encrypted if encrypted_fields is not None
 )
 
 # Data is automatically decrypted when retrieved
-results = table.search(
-    index="alice"# search the corresponding data by their index
+user_success_logs = success_table.search(
+    index="by_user",
+    user_id="user123"
 )
-for result in results:
-    print(result)
+for user_success_logs in user_success_logs:
+    print(user_success_logs)
