@@ -116,7 +116,6 @@ class TableDefinition:
                 continue
 
             # Map validators to SQL types
-            sql_type = "TEXT"  # Default for strings and other types
 
             if isinstance(base_validator, Int64Validator):
                 sql_type = "INTEGER"
@@ -125,7 +124,7 @@ class TableDefinition:
             elif isinstance(base_validator, BooleanValidator):
                 sql_type = "INTEGER"
             else:
-                sql_type = "TEXT"
+                sql_type = "TEXT"  # Default for strings and other types
 
             sql_columns.append(f"[{col_name}] {sql_type}")
 
