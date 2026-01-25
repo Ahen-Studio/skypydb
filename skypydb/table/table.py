@@ -126,11 +126,7 @@ class Table:
         """
 
         # Convert list filters if needed
-        processed_filters = {}
-        for key, value in filters.items():
-            processed_filters[key] = value
-
-        return self.db.delete_data(self.table_name, **processed_filters)
+        return self.db.delete_data(self.table_name, **filters)
 
 
     # search a data from the table
