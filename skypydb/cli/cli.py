@@ -221,16 +221,17 @@ class SkypyCLI:
         print("[bold cyan]Launching Skypydb dashboard.[/bold cyan]\n")
 
         # Set environment variables for dashboard
-        os.environ["SKYPYDB_PATH"] = path
+        if path is not None:
+            os.environ["SKYPYDB_PATH"] = path
         os.environ["SKYPYDB_PORT"] = str(port)
 
         from ..dashboard.dashboard.dashboard import app
 
         try:
             import uvicorn
-        except Exception as exc:
+        except ImportError as exc:
             print(f"[red]Error: Uvicorn is required to run the dashboard: {exc}[/red]")
-            raise typer.Exit(code=1)
+            raise typer.Exit(code=1) from exc
 
         print(f"[green]Dashboard is running at [bold]http://127.0.0.1:{port}[/bold][/green]")
 
