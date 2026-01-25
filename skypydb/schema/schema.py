@@ -3,7 +3,7 @@ Schema system for Skypydb.
 """
 
 from typing import Any, Dict, List, Optional
-from .values import Validator, v
+from .values import Validator, Int64Validator, Float64Validator, BooleanValidator
 
 
 # main class to define a table with columns and indexes
@@ -116,11 +116,11 @@ class TableDefinition:
             # Map validators to SQL types
             sql_type = "TEXT"  # Default for strings and other types
 
-            if isinstance(base_validator, v.int64().__class__):
+            if isinstance(base_validator, Int64Validator):
                 sql_type = "INTEGER"
-            elif isinstance(base_validator, v.float64().__class__):
+            elif isinstance(base_validator, Float64Validator):
                 sql_type = "REAL"
-            elif isinstance(base_validator, v.boolean().__class__):
+            elif isinstance(base_validator, BooleanValidator):
                 sql_type = "INTEGER"
             else:
                 sql_type = "TEXT"

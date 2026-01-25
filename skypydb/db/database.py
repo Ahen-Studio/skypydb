@@ -289,7 +289,7 @@ class Database:
             # Handle list values - use IN clause
             if isinstance(value, list):
                 if not value:
-                    raise ValueError(f"Empty list provided for filter '{column}'")
+                    raise ValidationError(f"Empty list provided for filter '{column}'")
                 placeholders = ", ".join(["?" for _ in value])
                 conditions.append(f"[{column}] IN ({placeholders})")
                 params.extend([str(v) for v in value])
@@ -501,13 +501,13 @@ class Database:
         """
 
         def _normalize_type(t: Any) -> str:
-            if t is str or (isinstance(t, type) and t is str):
+            if t is str:
                 return "str"
-            if t is int or (isinstance(t, type) and t is int):
+            if t is int:
                 return "int"
-            if t is float or (isinstance(t, type) and t is float):
+            if t is float:
                 return "float"
-            if t is bool or (isinstance(t, type) and t is bool):
+            if t is bool:
                 return "bool"
             return str(t)
 
