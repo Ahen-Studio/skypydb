@@ -32,7 +32,7 @@ class SkypyCLI:
     def __init__(
         self,
         env_file_name: str = ".env.local",
-        skypydb_folder: str = "skypydb",
+        skypydb_folder: str = "db",
         generated_folder: str = "_generated",
         schema_file_name: str = "schema.py",
         gitignore_path: str = ".gitignore",

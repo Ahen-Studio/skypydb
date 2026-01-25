@@ -17,12 +17,12 @@ from ..schema import Schema
 class Client:
     """
     Main client for interacting with Skypydb.
-    All tables must be defined in skypydb/schema.py using the schema system.
+    All tables must be defined in db/schema.py using the schema system.
     """
 
     def __init__(
         self,
-        path: str,
+        path: str = "./db/_generated/skypydb.db",
         encryption_key: Optional[str] = None,
         salt: Optional[bytes] = None,
         encrypted_fields: Optional[list] = None,
@@ -30,8 +30,9 @@ class Client:
         """
         Initialize Skypydb client.
 
+        The database is stored at ./db/_generated/skypydb.db
+
         Args:
-            path: Path to SQLite database file
             encryption_key: Optional encryption key for data encryption at rest.
                            If provided, sensitive data will be encrypted.
                            Generate a secure key with: EncryptionManager.generate_key()
@@ -42,36 +43,37 @@ class Client:
 
         Example:
             # Without encryption
-            client = skypydb.Client(path="./skypydb/skypy.db")
+            client = skypydb.Client()
 
             # With encryption (all fields encrypted by default)
             from skypydb.security import EncryptionManager
 
             key = EncryptionManager.generate_key()
 
-            client = skypydb.Client(
-                path="./skypydb/skypy.db",
-                encryption_key=key
-            )
+            client = skypydb.Client(encryption_key=key)
 
             # With encryption (specific fields only)
             client = skypydb.Client(
-                path="./skypydb/skypy.db",
                 encryption_key=key,
                 encrypted_fields=["content", "email", "password"]
             )
         """
-
         self.path = path
+        
+        # Ensure the directory exists
+        db_dir = os.path.dirname(self.path)
+        if db_dir and not os.path.exists(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
+
         self.db = Database(path, encryption_key=encryption_key, salt=salt, encrypted_fields=encrypted_fields)
 
 
     # create a table
     def create_table(self) -> Dict[str, Table]:
         """
-        Create all tables defined in skypydb/schema.py.
+        Create all tables defined in db/schema.py.
 
-        This method reads the schema from skypydb/schema.py and creates all tables
+        This method reads the schema from db/schema.py and creates all tables
         with their columns, types, and indexes as defined in the schema.
 
         Returns:
@@ -82,8 +84,8 @@ class Client:
             ValueError: If schema file is missing or invalid
 
         Example:
-            # Define your schema in skypydb/schema.py, then:
-            client = skypydb.Client(path="./skypydb/mydb.db")
+            # Define your schema in db/schema.py, then:
+            client = skypydb.Client()
             tables = client.create_table()
 
             # Access tables
@@ -91,20 +93,19 @@ class Client:
             posts_table = tables["posts"]
         """
 
-        try:
-            # Import schema module (package) first
-            schema_module = importlib.import_module("skypydb.schema")
-        except ImportError:
-            raise ValueError(
-                "Schema file not found at skypydb/schema.py. "
-                "Please create a schema.py file with a schema definition."
-            )
+        schema = None
 
-        # Try to get schema object from the module
-        schema = getattr(schema_module, "schema", None)
+        # First, try to load schema.py from the current working directory (./db/schema.py)
+        cwd_schema_path = os.path.join(os.getcwd(), "db", "schema.py")
+        if os.path.exists(cwd_schema_path):
+            spec = importlib.util.spec_from_file_location("skypydb._user_schema", cwd_schema_path)
+            if spec and spec.loader:
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                schema = getattr(module, "schema", None)
 
-        # If we got a module (name collision with package), load schema.py explicitly
-        if schema is None or isinstance(schema, ModuleType):
+        # If not found in cwd, try to load from the installed package location
+        if schema is None:
             package_root = os.path.dirname(os.path.dirname(__file__))
             schema_path = os.path.join(package_root, "schema.py")
             if os.path.exists(schema_path):
@@ -116,8 +117,9 @@ class Client:
 
         if schema is None:
             raise ValueError(
-                "No 'schema' object found in skypydb/schema.py. "
-                "Please define a schema using: schema = defineSchema({...})"
+                "No 'schema' object found in db/schema.py. "
+                "Please create a schema.py file in ./db/schema.py with a schema definition "
+                "using: schema = defineSchema({...})"
             )
 
         if not isinstance(schema, Schema):

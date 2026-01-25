@@ -13,7 +13,7 @@ def get_database() -> Database:
     Get database instance from environment.
     """
 
-    path = os.environ.get('SKYPYDB_PATH', './skypydb/skypy.db')
+    path = os.environ.get('SKYPYDB_PATH', './db/_generated/skypydb.db')
     return Database(path)
 
 

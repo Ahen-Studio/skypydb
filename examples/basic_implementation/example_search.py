@@ -1,7 +1,7 @@
 import skypydb
 
 # Create a client
-client = skypydb.Client(path="./skypydb/skypydb.db")
+client = skypydb.Client()
 
 # Create tables from the schema
 # This reads the schema from skypydb/schema.py and creates all tables
