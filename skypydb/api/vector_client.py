@@ -403,11 +403,18 @@ class Vector_Client:
         return self
     
     def __exit__(
+    def __exit__(
         self,
         exc_type,
         exc_val,
         exc_tb,
-    ) -> None:
+    ) -> bool:
+        """
+        Close connection on context exit.
+        """
+        
+        self.close()
+        return False
         """
         Close connection on context exit.
         """
