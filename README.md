@@ -28,7 +28,7 @@ pip install skypydb # python client
 
 ## Features
 
-- Simple: fully-documented
+- Simple: fully-documented and easy to debug with detailed error messages
 
 - Table: create, delete, search data from tables
 

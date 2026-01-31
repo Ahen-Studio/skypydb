@@ -10,6 +10,7 @@ class SkypydbError(Exception):
 
     code = "SKY001"
 
+    # initialize the SkypydbError instance for handling and formatting error messages
     def __init__(
         self,
         message=None,
@@ -24,6 +25,8 @@ class SkypydbError(Exception):
         self.message = message
         super().__init__(self._format_message())
 
+
+    # format the error message
     def _format_message(
         self,
     ):
@@ -38,20 +41,8 @@ class SkypydbError(Exception):
             return f"[{self.code}] {self.message}"
         return f"[{self.code}] {self.__class__.__name__}"
 
-    def __str__(
-        self,
-    ):
-        """
-        Return the formatted error message.
 
-        Returns:
-            str: The formatted error message.
-        """
-
-        return self._format_message()
-
-
-# database errors handling
+# table errors handling
 class TableNotFoundError(SkypydbError):
     """
     Raised when a table is not found.
