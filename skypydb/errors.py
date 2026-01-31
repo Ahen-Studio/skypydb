@@ -8,7 +8,8 @@ class SkypydbError(Exception):
     Base exception for all Skypydb errors.
     """
 
-    code = "SKY001"
+    CODE = "SKY001"
+    default_message = "An error occurred."
 
     # initialize the SkypydbError instance for handling and formatting error messages
     def __init__(
@@ -25,9 +26,12 @@ class SkypydbError(Exception):
         self.message = message
 
         if self.message:
-            formatted_message = f"[{self.code}] {self.message}"
+            formatted_message = f"[{self.CODE}] {self.message}"
         else:
-            formatted_message = f"[{self.code}] {self.__class__.__name__}"
+            # Use a class-specific default message when provided, otherwise fall back
+            # to the generic default_message defined on the base class.
+            default_msg = getattr(self, "default_message", self.__class__.__name__)
+            formatted_message = f"[{self.CODE}] {default_msg}"
 
         super().__init__(formatted_message)
 
@@ -38,7 +42,8 @@ class TableNotFoundError(SkypydbError):
     Raised when a table is not found.
     """
 
-    code = "SKY101"
+    CODE = "SKY101"
+    default_message = "Table not found."
 
 
 # table already exists error handling
@@ -47,21 +52,18 @@ class TableAlreadyExistsError(SkypydbError):
     Raised when trying to create a table that already exists.
     """
 
-    code = "SKY102"
+    CODE = "SKY102"
+    default_message = "Table already exists."
 
 
 # database errors handling
 class DatabaseError(SkypydbError):
     """
     Raised when a database-level operation fails.
-
-    This is a generic error used for failures such as establishing a database
-    connection, executing queries, committing or rolling back transactions, or
-    performing other low-level database actions that are not covered by more
-    specific exceptions like TableNotFoundError or TableAlreadyExistsError.
     """
 
-    code = "SKY103"
+    CODE = "SKY103"
+    default_message = "Database operation failed."
 
 
 # search errors handling
@@ -70,7 +72,8 @@ class InvalidSearchError(SkypydbError):
     Raised when search parameters are invalid.
     """
 
-    code = "SKY201"
+    CODE = "SKY201"
+    default_message = "Invalid search parameters."
 
 
 # security errors handling
@@ -79,7 +82,8 @@ class SecurityError(SkypydbError):
     Raised when a security operation fails.
     """
 
-    code = "SKY301"
+    CODE = "SKY301"
+    default_message = "Security operation failed."
 
 
 # validation errors handling
@@ -88,7 +92,8 @@ class ValidationError(SkypydbError):
     Raised when input validation fails.
     """
 
-    code = "SKY302"
+    CODE = "SKY302"
+    default_message = "Input validation failed."
 
 
 # encryption errors handling
@@ -97,7 +102,8 @@ class EncryptionError(SkypydbError):
     Raised when encryption/decryption operations fail.
     """
 
-    code = "SKY303"
+    CODE = "SKY303"
+    default_message = "Encryption or decryption operation failed."
 
 
 # collection not found error handling
@@ -106,7 +112,8 @@ class CollectionNotFoundError(SkypydbError):
     Raised when a vector collection is not found.
     """
 
-    code = "SKY401"
+    CODE = "SKY401"
+    default_message = "Collection not found."
 
 
 # collection already exists error handling
@@ -115,7 +122,8 @@ class CollectionAlreadyExistsError(SkypydbError):
     Raised when trying to create a collection that already exists.
     """
 
-    code = "SKY402"
+    CODE = "SKY402"
+    default_message = "Collection already exists."
 
 
 # embedding errors handling
@@ -124,7 +132,8 @@ class EmbeddingError(SkypydbError):
     Raised when embedding generation fails.
     """
 
-    code = "SKY403"
+    CODE = "SKY403"
+    default_message = "Embedding generation failed."
 
 
 # vector search errors handling
@@ -133,4 +142,5 @@ class VectorSearchError(SkypydbError):
     Raised when vector similarity search fails.
     """
 
-    code = "SKY404"
+    CODE = "SKY404"
+    default_message = "Vector similarity search failed."
