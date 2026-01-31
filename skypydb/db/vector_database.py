@@ -84,7 +84,7 @@ class VectorDatabase:
         Path(path).parent.mkdir(parents=True, exist_ok=True)
 
         # Connect to SQLite database
-        self.conn = sqlite3.connect(path)
+        self.conn = sqlite3.connect(path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
 
         # Create collections metadata table
