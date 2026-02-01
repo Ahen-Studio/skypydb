@@ -8,10 +8,10 @@ import json
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from ..errors import TableAlreadyExistsError, TableNotFoundError
-from ..security.encryption import EncryptionManager
-from ..security.validation import InputValidator, ValidationError
-from ..schema.schema import TableDefinition
+from skypydb.errors import TableAlreadyExistsError, TableNotFoundError
+from skypydb.security.encryption import EncryptionManager
+from skypydb.security.validation import InputValidator, ValidationError
+from skypydb.schema.schema import TableDefinition
 
 
 # main class for managing SQLite database connections and operations

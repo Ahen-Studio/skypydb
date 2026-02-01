@@ -5,7 +5,7 @@ Provides protection against injection attacks and ensures data integrity.
 
 import re
 from typing import Any, Dict, Optional
-from ..errors import ValidationError
+from skypydb.errors import ValidationError
 
 
 # main class for input validation and sanitization

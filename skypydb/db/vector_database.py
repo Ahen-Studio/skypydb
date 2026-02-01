@@ -8,7 +8,7 @@ import math
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Callable
-from ..security.validation import InputValidator
+from skypydb.security.validation import InputValidator
 
 
 # calculate cosine similarity between two vectors

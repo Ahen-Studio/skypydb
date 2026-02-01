@@ -6,10 +6,10 @@ import importlib
 import importlib.util
 import os
 from typing import Dict, Optional
-from ..db.database import Database
-from ..errors import TableAlreadyExistsError, TableNotFoundError
-from ..table.table import Table
-from ..schema import Schema
+from skypydb.db.database import Database
+from skypydb.errors import TableAlreadyExistsError, TableNotFoundError
+from skypydb.table.table import Table
+from skypydb.schema import Schema
 
 # constant to define the path to the database file
 DB_PATH = "./db/_generated/skypydb.db"

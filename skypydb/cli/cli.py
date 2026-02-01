@@ -9,8 +9,8 @@ from pathlib import Path
 import typer
 import questionary
 from rich import print
-from ..security import EncryptionManager
-from .. import __version__
+from skypydb.security import EncryptionManager
+from skypydb import __version__
 
 
 # Initialize Typer app

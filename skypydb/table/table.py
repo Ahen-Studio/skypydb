@@ -3,8 +3,8 @@ Table API for managing data.
 """
 
 from typing import Any, Dict, List, Optional
-from ..db.database import Database
-from ..errors import TableNotFoundError
+from skypydb.db.database import Database
+from skypydb.errors import TableNotFoundError
 
 
 # main class for managing table

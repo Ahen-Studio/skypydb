@@ -7,7 +7,7 @@ import base64
 import os
 import secrets
 from typing import Optional
-from ..errors import EncryptionError
+from skypydb.errors import EncryptionError
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC

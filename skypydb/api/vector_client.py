@@ -5,9 +5,9 @@ Vector Client API for Skypydb.
 import os
 import time
 from typing import Any, Dict, List, Optional
-from ..db.vector_database import VectorDatabase
-from ..embeddings.ollama import OllamaEmbedding
-from .collection import Collection
+from skypydb.db.vector_database import VectorDatabase
+from skypydb.embeddings.ollama import OllamaEmbedding
+from skypydb.api.collection import Collection
 
 
 # main class for the vector client
