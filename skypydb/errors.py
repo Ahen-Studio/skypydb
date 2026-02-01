@@ -87,7 +87,10 @@ class SecurityError(SkypydbError):
     """
 
     CODE = "SKY301"
-    default_message = "Security operation failed."
+    default_message = (
+        "Security operation failed. Possible authentication or authorization issue; "
+        "see logs for details."
+    )
 
 
 # validation errors handling
