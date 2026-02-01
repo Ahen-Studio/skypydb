@@ -128,6 +128,7 @@ class HealthAPI:
         Check vector database health.
         """
 
+        vdb = None
         try:
             vdb = DatabaseConnection.get_vector()
             collection_count = len(vdb.list_collections())
@@ -142,6 +143,13 @@ class HealthAPI:
                 "error": str(error)
             }
             status["status"] = "degraded"
+        finally:
+            if vdb is not None:
+                try:
+                    vdb.close()
+                except Exception:
+                    # Suppress close errors in health check to avoid masking original issues
+                    pass
 
 
 # table operations
@@ -174,7 +182,7 @@ class TableAPI:
         try:
             return {
                 "name": table_name,
-                "row_count": len(db.get_all_data(table_name)),
+                "row_count": db.get_row_count(table_name),
                 "columns": db.get_table_columns(table_name),
                 "config": db.get_table_config(table_name)
             }
@@ -219,8 +227,20 @@ class TableAPI:
         db = DatabaseConnection.get_main()
 
         try:
-            all_data = db.get_all_data(table_name)
-            return self._paginate(all_data, limit, offset)
+            # Use database-level pagination to avoid loading all rows into memory
+            total = db.get_table_row_count(table_name)
+            data_page = db.get_data(table_name, limit=limit, offset=offset)
+
+            # Preserve the same response structure as _paginate
+            end = offset + limit if limit else total
+
+            return {
+                "data": data_page,
+                "total": total,
+                "limit": limit,
+                "offset": offset,
+                "has_more": end < total
+            }
         finally:
             db.close()
 
@@ -547,6 +567,7 @@ class StatisticsAPI:
         Collect collection statistics.
         """
 
+        vdb = None
         try:
             vdb = DatabaseConnection.get_vector()
             collections = vdb.list_collections()
@@ -556,9 +577,15 @@ class StatisticsAPI:
                 vdb.count(coll['name'])
                 for coll in collections
             )
-            vdb.close()
         except Exception as error:
             stats["collections"]["error"] = str(error)
+        finally:
+            if vdb is not None:
+                try:
+                    vdb.close()
+                except Exception:
+                    # Suppress close errors to avoid masking original exceptions
+                    pass
 
 
 # main api class
