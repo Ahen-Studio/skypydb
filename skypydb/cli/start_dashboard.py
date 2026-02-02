@@ -129,7 +129,8 @@ class DashboardManager:
                 stderr=subprocess.PIPE,
                 text=True,
                 encoding="utf-8",
-                errors="replace"
+                errors="replace",
+                shell=True
             )
 
             threading.Thread(
