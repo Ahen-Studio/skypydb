@@ -25,6 +25,9 @@ class RSysSearch:
     ):
         self.conn = sqlite3.connect(path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
+        self.audit = AuditTable(path)
+        self.sysget = SysGet(path)
+        self.encryption = Encryption(path)
 
     def search(
         self,
@@ -61,7 +64,7 @@ class RSysSearch:
         if index is not None:
             index = InputValidator.sanitize_string(str(index))
 
-        if not AuditTable.table_exists(table_name):
+        if not self.audit.table_exists(table_name):
             raise TableNotFoundError(f"Table '{table_name}' not found")
 
         conditions = []
@@ -70,7 +73,7 @@ class RSysSearch:
         # Add index condition if provided
         # Index searches across all non-standard columns (OR condition)
         if index is not None:
-            columns = SysGet.get_table_columns_names(table_name)
+            columns = self.sysget.get_table_columns_names(table_name)
             non_standard_columns = [
                 col for col in columns if col not in ("id", "created_at")
             ]
@@ -108,7 +111,7 @@ class RSysSearch:
         results = []
         for row in cursor.fetchall():
             row_dict = dict(row)
-            decrypted_row = Encryption.decrypt_data(row_dict)
+            decrypted_row = self.encryption.decrypt_data(row_dict)
             results.append(decrypted_row)
 
         return results

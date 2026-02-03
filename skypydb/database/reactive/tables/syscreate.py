@@ -16,6 +16,8 @@ class SysCreate:
     ):
         self.conn = sqlite3.connect(path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
+        self.audit = AuditTable(path)
+        self.utils = Utils(path)
 
     def create_table(
         self,
@@ -50,7 +52,7 @@ class SysCreate:
         for col_name in table_def.columns.keys():
             InputValidator.validate_column_name(col_name)
 
-        if AuditTable.table_exists(table_name):
+        if self.audit.table_exists(table_name):
             raise TableAlreadyExistsError(f"Table '{table_name}' already exists")
 
         cursor = self.conn.cursor()
@@ -73,6 +75,6 @@ class SysCreate:
             cursor.execute(index_sql)
 
         # Save table definition as configuration
-        config = Utils.table_def_to_config(table_def)
-        Utils.save_table_config(table_name, config)
+        config = self.utils.table_def_to_config(table_def)
+        self.utils.save_table_config(table_name, config)
         self.conn.commit()

@@ -142,7 +142,7 @@ class Client:
             if table_def is None:
                 continue
             # Create table with schema definition
-            self.db.create_table_from_schema(table_name, table_def)
+            self.db.create_table(table_name, table_def)
             created_tables[table_name] = Table(self.db, table_name)
 
         return created_tables

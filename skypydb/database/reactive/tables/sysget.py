@@ -20,6 +20,8 @@ class SysGet:
     ):
         self.conn = sqlite3.connect(path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
+        self.audit = AuditTable(path)
+        self.encryption = Encryption(path)
 
     def get_all_tables_names(
         self,
@@ -47,7 +49,7 @@ class SysGet:
         # Validate table name
         table_name = InputValidator.validate_table_name(table_name)
 
-        if not AuditTable.table_exists(table_name):
+        if not self.audit.table_exists(table_name):
             raise TableNotFoundError(f"Table '{table_name}' not found")
 
         cursor = self.conn.cursor()
@@ -66,7 +68,7 @@ class SysGet:
         # Validate table name
         table_name = InputValidator.validate_table_name(table_name)
 
-        if not AuditTable.table_exists(table_name):
+        if not self.audit.table_exists(table_name):
             raise TableNotFoundError(f"Table '{table_name}' not found")
 
         cursor = self.conn.cursor()
@@ -76,7 +78,7 @@ class SysGet:
         results = []
         for row in cursor.fetchall():
             row_dict = dict(row)
-            decrypted_row = Encryption.decrypt_data(row_dict)
+            decrypted_row = self.encryption.decrypt_data(row_dict)
             results.append(decrypted_row)
 
         return results

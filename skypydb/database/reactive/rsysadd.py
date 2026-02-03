@@ -18,6 +18,8 @@ class RSysAdd:
     ):
         self.conn = sqlite3.connect(path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
+        self.audit = AuditTable(path)
+        self.encryption = Encryption(path)
 
     def add_data(
         self,
@@ -46,7 +48,7 @@ class RSysAdd:
         # Validate data dictionary
         data = InputValidator.validate_data_dict(data)
 
-        if not AuditTable.table_exists(table_name):
+        if not self.audit.table_exists(table_name):
             raise TableNotFoundError(f"Table '{table_name}' not found")
 
         # Generate ID if needed
@@ -60,10 +62,10 @@ class RSysAdd:
         # Ensure columns exist
         columns_to_add = [col for col in data.keys() if col not in ("id", "created_at")]
         if columns_to_add:
-            AuditTable.add_columns_if_needed(table_name, columns_to_add)
+            self.audit.add_columns_if_needed(table_name, columns_to_add)
 
         # Encrypt sensitive data before storing
-        encrypted_data = Encryption.encrypt_data(data)
+        encrypted_data = self.encryption.encrypt_data(data)
 
         # Build INSERT query
         columns = list(encrypted_data.keys())

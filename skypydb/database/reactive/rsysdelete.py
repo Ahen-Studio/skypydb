@@ -14,6 +14,7 @@ class RSysDelete:
     ):
         self.conn = sqlite3.connect(path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
+        self.audit = AuditTable(path)
 
     def delete(
         self,
@@ -52,7 +53,7 @@ class RSysDelete:
         if filters:
             filters = InputValidator.validate_filter_dict(filters)
 
-        if not AuditTable.table_exists(table_name):
+        if not self.audit.table_exists(table_name):
             raise TableNotFoundError(f"Table '{table_name}' not found")
 
         if not filters:

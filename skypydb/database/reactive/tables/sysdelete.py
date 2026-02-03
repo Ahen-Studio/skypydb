@@ -14,6 +14,7 @@ class SysDelete:
     ):
         self.conn = sqlite3.connect(path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
+        self.audit = AuditTable(path)
 
     def delete_table(
         self,
@@ -33,7 +34,7 @@ class SysDelete:
         # Validate table name
         table_name = InputValidator.validate_table_name(table_name)
 
-        if not AuditTable.table_exists(table_name):
+        if not self.audit.table_exists(table_name):
             raise TableNotFoundError(f"Table '{table_name}' not found")
 
         cursor = self.conn.cursor()

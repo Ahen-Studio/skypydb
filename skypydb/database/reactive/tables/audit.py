@@ -22,6 +22,7 @@ class AuditTable:
     ):
         self.conn = sqlite3.connect(path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
+        self.utils = Utils(path)
 
     def table_exists(
         self,
@@ -132,7 +133,7 @@ class AuditTable:
             ValueError: If data validation fails
         """
 
-        config = Utils.get_table_config(table_name)
+        config = self.utils.get_table_config(table_name)
         if not config:
             # No configuration, return data as-is
             return data
