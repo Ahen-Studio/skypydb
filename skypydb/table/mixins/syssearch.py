@@ -55,5 +55,5 @@ class SysSearch:
             )
         """
 
-        # Pass filters directly; list values are handled explicitly by the database layer
+        # pass filters directly; list values are handled explicitly by the database layer
         return self.db.search(self.table_name, index=index, **filters)

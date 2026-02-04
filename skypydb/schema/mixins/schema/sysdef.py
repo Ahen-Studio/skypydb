@@ -1,5 +1,5 @@
 """
-
+Module containing the SysDef class, which is used to define table in the database.
 """
 
 from typing import (

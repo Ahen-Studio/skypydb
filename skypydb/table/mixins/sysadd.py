@@ -69,5 +69,4 @@ class SysAdd:
             row_id = self.db.add_data(self.table_name, validated_data, generate_id=True)
 
             inserted_ids.append(row_id)
-
         return inserted_ids

@@ -1,5 +1,5 @@
 """
-
+Module containing the SysGet class, which is used to get SQL index.
 """
 
 from typing import (

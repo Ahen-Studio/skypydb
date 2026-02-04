@@ -1,5 +1,5 @@
 """
-
+Module containing the SysValidate class, which is used to validate a row of data against a table definition.
 """
 
 from typing import (

@@ -1,5 +1,5 @@
 """
-
+Module containing the SysIndex class, which is used to add an index to the table definition in the database.
 """
 
 from typing import (

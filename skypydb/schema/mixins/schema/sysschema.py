@@ -1,5 +1,5 @@
 """
-
+Module containing the SysSchema class, which is used to perform get operations on the schema in the database.
 """
 
 from typing import (
