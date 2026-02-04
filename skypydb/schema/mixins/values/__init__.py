@@ -15,5 +15,5 @@ __all__ = [
     "BooleanValidator",
     "StringValidator",
     "Int64Validator",
-    "Float64Validator",
+    "Float64Validator"
 ]

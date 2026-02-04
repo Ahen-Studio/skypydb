@@ -22,9 +22,7 @@ from .embeddings import (
     get_embedding_function,
 )
 
-
 __version__ = "0.1.10"
-
 
 __all__ = [
     "Client",

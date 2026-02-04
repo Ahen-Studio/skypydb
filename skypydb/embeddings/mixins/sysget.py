@@ -7,14 +7,14 @@ import urllib.request
 import urllib.error
 from typing import (
     List,
-    Optional
+    Callable
 )
 from skypydb.embeddings import OllamaEmbedding
 
 class SysGet:
     def _get_embedding(
         self,
-        text: str,
+        text: str
     ) -> List[float]:
         """
         Get embedding for a single text using Ollama API.
@@ -56,7 +56,6 @@ class SysGet:
                         f"No embedding returned from Ollama. "
                         f"Make sure model '{self.embedder.model}' is an embedding model."
                     )
-                
                 return embedding
 
         except urllib.error.URLError as e:
@@ -67,22 +66,8 @@ class SysGet:
         except json.JSONDecodeError as e:
             raise ValueError(f"Invalid response from Ollama: {e}")
 
-    def dimension(
-        self,
-    ) -> Optional[int]:
-        """
-        Get the embedding dimension.
-
-        Returns: 
-            None if no embedding has been generated yet.
-        """
-
-        return self._dimension
-
-
-    # get the embedding dimension and generate a test embedding if needed
     def get_dimension(
-        self,
+        self
     ) -> int:
         """
         Get the embedding dimension, generating a test embedding if needed.
@@ -92,8 +77,32 @@ class SysGet:
         """
 
         if self._dimension is None:
-            # Generate a test embedding to determine dimension
+            # generate a test embedding to determine dimension
             test_embedding = self._get_embedding("test")
             self._dimension = len(test_embedding)
 
         return self._dimension
+
+def get_embedding_function(
+    model: str = "mxbai-embed-large",
+    base_url: str = "http://localhost:11434"
+) -> Callable[[List[str]], List[List[float]]]:
+    """
+    Get an embedding function using Ollama.
+
+    This is a convenience function that returns a callable
+    embedding function for use with the vector database.
+
+    Args:
+        model: Name of the Ollama embedding model
+        base_url: Base URL for Ollama API
+
+    Returns:
+        Callable that takes a list of texts and returns embeddings
+
+    Example:
+        embed_fn = get_embedding_function(model="mxbai-embed-large")
+        embeddings = embed_fn(["Hello world", "How are you?"])
+    """
+
+    return OllamaEmbedding(model=model, base_url=base_url)

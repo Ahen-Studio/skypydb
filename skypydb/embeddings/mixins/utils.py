@@ -8,7 +8,7 @@ from skypydb.embeddings.mixins import EmbeddingsFn
 class Utils:
     def __call__(
         self,
-        texts: List[str],
+        texts: List[str]
     ) -> List[List[float]]:
         """
         Make the class callable for compatibility with other libraries.

@@ -6,12 +6,14 @@ from .ollama import OllamaEmbedding
 from .mixins import (
     EmbeddingsFn,
     SysGet,
-    Utils
+    Utils,
+    get_embedding_function
 )
 
 __all__ = [
     "OllamaEmbedding",
     "EmbeddingsFn",
     "SysGet",
-    "Utils"
+    "Utils",
+    "get_embedding_function"
 ]

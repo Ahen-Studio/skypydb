@@ -9,12 +9,16 @@ from skypydb.embeddings.mixins import (
     SysGet
 )
 
-class OllamaEmbedding(EmbeddingsFn, Utils, SysGet):
+class OllamaEmbedding(
+    EmbeddingsFn,
+    Utils,
+    SysGet
+):
     def __init__(
         self,
         model: str = "mxbai-embed-large",
         base_url: str = "http://localhost:11434",
-        dimension: Optional[int] = None,
+        dimension: Optional[int] = None
     ):
         """
         Initialize Ollama embedding function.

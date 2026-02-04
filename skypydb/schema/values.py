@@ -8,14 +8,13 @@ from skypydb.schema.mixins.values import (
     Int64Validator,
     Float64Validator,
     BooleanValidator,
-    OptionalValidator,
+    OptionalValidator
 )
 
 class Values:
     """
     Factory for creating type validators.
     """
-
 
     # create a string validator
     @staticmethod
@@ -36,7 +35,6 @@ class Values:
 
         return Int64Validator()
 
-
     # create a float validator
     @staticmethod
     def float64() -> Validator:
@@ -46,7 +44,6 @@ class Values:
 
         return Float64Validator()
 
-
     # create a boolean validator
     @staticmethod
     def boolean() -> Validator:
@@ -55,7 +52,6 @@ class Values:
         """
 
         return BooleanValidator()
-
 
     # create an optional validator
     @staticmethod
@@ -72,6 +68,5 @@ class Values:
 
         return OptionalValidator(validator)
 
-
-# Create singleton instance for easy import
+# create singleton instance for easy import
 v = Values()

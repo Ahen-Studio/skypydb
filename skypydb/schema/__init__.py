@@ -4,10 +4,12 @@ Provides schema definition tools.
 """
 
 from .schema import (
-    Schema,
+    SysSchema,
     TableDefinition,
+)
+from .mixins.schema import (
     defineSchema,
-    defineTable,
+    defineTable
 )
 from .values import (
     Validator,
@@ -17,8 +19,8 @@ from .values import (
 __all__ = [
     "defineSchema",
     "defineTable",
-    "Schema",
+    "SysSchema",
     "TableDefinition",
     "Validator",
-    "v",
+    "v"
 ]
