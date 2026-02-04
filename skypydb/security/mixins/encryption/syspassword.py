@@ -1,5 +1,5 @@
 """
-
+Module containing the SysPassword class, which is used to securely manage passwords.
 """
 
 import base64

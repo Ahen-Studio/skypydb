@@ -6,6 +6,7 @@ from typing import Optional
 from skypydb.errors import EncryptionError
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from skypydb.security.mixins.encryption import (
+    SysManager,
     SysGenerator,
     SysPassword,
     SysEncrypt,
@@ -13,6 +14,7 @@ from skypydb.security.mixins.encryption import (
 )
 
 class EncryptionManager(
+    SysManager,
     SysGenerator,
     SysPassword,
     SysEncrypt,

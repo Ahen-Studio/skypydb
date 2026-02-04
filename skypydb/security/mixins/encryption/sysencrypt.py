@@ -1,5 +1,5 @@
 """
-
+Module containing the SysEncrypt class, which is used to encrypt data.
 """
 
 import os

@@ -2,18 +2,14 @@
 Security module for Skypydb.
 """
 
-from skypydb.security import (
-    EncryptionManager,
-    EncryptionError
-)
+from skypydb.security.encryption import EncryptionManager, EncryptionError
 from skypydb.security.mixins.encryption import create_encryption_manager
-from skypydb.security.validation import (
-    InputValidator,
-    ValidationError,
+from skypydb.security.mixins.validation import (
     validate_table_name,
     validate_column_name,
     sanitize_input
 )
+from skypydb.security.validation import InputValidator
 
 __all__ = [
     "create_encryption_manager",
@@ -22,6 +18,5 @@ __all__ = [
     "InputValidator",
     "sanitize_input",
     "validate_column_name",
-    "validate_table_name",
-    "ValidationError"
+    "validate_table_name"
 ]

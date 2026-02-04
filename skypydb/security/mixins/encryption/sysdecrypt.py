@@ -1,5 +1,5 @@
 """
-
+Module containing the SysDecrypt class, which is used to decrypt data.
 """
 
 import base64
