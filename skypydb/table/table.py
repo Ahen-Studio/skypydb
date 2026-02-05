@@ -34,6 +34,8 @@ class Table(
             table_name: Name of the table
         """
 
+        super().__init__()
+
         self.db = db
         self.table_name = table_name
 

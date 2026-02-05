@@ -10,7 +10,8 @@
 
 <div align="center">
 
-![GitHub top language](https://img.shields.io/github/languages/top/Ahen-Studio/skypy-db)
+[![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff)](#)
+[![SQLite](https://img.shields.io/badge/SQLite-%2307405e.svg?logo=sqlite&logoColor=white)](#)
 [![PyPI](https://img.shields.io/pypi/v/skypydb.svg)](https://pypi.org/project/skypydb/)
 [![License](https://img.shields.io/github/license/Ahen-Studio/skypy-db)](https://github.com/Ahen-Studio/skypy-db/blob/main/LICENSE)
 [![CodeRabbit Reviews](https://img.shields.io/coderabbit/prs/github/Ahen-Studio/skypy-db?utm_source=oss&utm_medium=github&utm_campaign=Ahen-Studio%2Fskypy-db&labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit+Reviews)](https://coderabbit.ai)
@@ -46,7 +47,7 @@ pip install skypydb # python client
 
 ## TODO
 
-- [ ] Continue the refactoring on the api folder, the cli folder and the dashboard folder.
+- [ ] Continue the refactoring on the api folder, the cli folder, the server folder and the dashboard folder.
 - [ ] Create the dashboard using Next.js and shadcn-ui
 - [ ] update the documentation
 

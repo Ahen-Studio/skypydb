@@ -48,6 +48,8 @@ class EncryptionManager(
             EncryptionError: If cryptography library is not installed
         """
 
+        super().__init__()
+
         if encryption_key is not None and not encryption_key.strip():
             raise EncryptionError("encryption_key must be a non-empty string")
 

@@ -39,6 +39,8 @@ class TableDefinition(
             table_name: Optional table name (can be used later)
         """
 
+        super().__init__()
+
         self.columns = columns
         self.indexes: List[Dict[str, Any]] = []
         self.table_name = table_name
