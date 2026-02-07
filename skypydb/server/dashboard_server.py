@@ -54,7 +54,10 @@ class DatabaseConnection:
     """
 
     @staticmethod
-    def _resolve_db_path(env_key: str, default_relative: str) -> str:
+    def _resolve_db_path(
+        env_key: str,
+        default_relative: str
+    ) -> str:
         """
         Resolve a database path from env, normalizing to an absolute path.
         """
@@ -73,7 +76,6 @@ class DatabaseConnection:
             candidates = sorted(p for p in generated_dir.glob("*.db") if p.is_file())
             if candidates:
                 return str(candidates[0].resolve())
-
         return str(default_path)
 
     @staticmethod
@@ -123,7 +125,10 @@ class HealthAPI:
         self._check_vector(status)
         return status
 
-    def _check_main(self, status: Dict[str, Any]) -> None:
+    def _check_main(
+        self,
+        status: Dict[str, Any]
+    ) -> None:
         """
         Check main database health.
         """
@@ -144,7 +149,10 @@ class HealthAPI:
             }
             status["status"] = "degraded"
 
-    def _check_vector(self, status: Dict[str, Any]) -> None:
+    def _check_vector(
+        self,
+        status: Dict[str, Any]
+    ) -> None:
         """
         Check vector database health.
         """
@@ -190,7 +198,11 @@ class TableAPI:
         finally:
             db.close()
 
-    def _get_info(self, db: ReactiveDatabase, table_name: str) -> Dict[str, Any]:
+    def _get_info(
+        self,
+        db: ReactiveDatabase,
+        table_name: str
+    ) -> Dict[str, Any]:
         """
         Get information about a specific table.
         """
@@ -210,7 +222,10 @@ class TableAPI:
                 "config": None
             }
 
-    def get_schema(self, table_name: str) -> Dict[str, Any]:
+    def get_schema(
+        self,
+        table_name: str
+    ) -> Dict[str, Any]:
         """
         Get schema information for a table.
         """
@@ -259,7 +274,6 @@ class TableAPI:
 
         try:
             results = db.search(table_name, index=query, **filters)
-
             if limit and len(results) > limit:
                 results = results[:limit]
             return {
@@ -311,7 +325,11 @@ class VectorAPI:
         finally:
             vdb.close()
 
-    def _get_info(self, vdb: VectorDatabase, collection: Dict) -> Dict[str, Any]:
+    def _get_info(
+        self,
+        vdb: VectorDatabase,
+        collection: Dict
+    ) -> Dict[str, Any]:
         """
         Get information about a vector collection.
         """
@@ -331,7 +349,10 @@ class VectorAPI:
                 "metadata": collection.get('metadata', {})
             }
 
-    def get_details(self, collection_name: str) -> Dict[str, Any]:
+    def get_details(
+        self,
+        collection_name: str
+    ) -> Dict[str, Any]:
         """
         Get detailed information about a vector collection.
         """
@@ -340,7 +361,6 @@ class VectorAPI:
 
         try:
             collection = vdb.get_collection(collection_name)
-
             if collection is None:
                 return {
                     "name": collection_name,
@@ -383,7 +403,6 @@ class VectorAPI:
                 where=metadata_filter,
                 include=["documents", "metadatas"]
             )
-
             return self._paginate(results, limit, offset)
         except Exception as error:
             return self._empty_result(error)
@@ -411,7 +430,6 @@ class VectorAPI:
                 where=metadata_filter,
                 include=["documents", "metadatas", "distances"]
             )
-
             return self._format_results(results, query_text, n_results)
         except Exception as error:
             return {
@@ -475,7 +493,10 @@ class VectorAPI:
             "n_results": n_results
         }
 
-    def _empty_result(self, error: Exception) -> Dict[str, Any]:
+    def _empty_result(
+        self,
+        error: Exception
+    ) -> Dict[str, Any]:
         """
         Return empty result with error.
         """
@@ -508,7 +529,10 @@ class StatisticsAPI:
         self._collect_collections(stats)
         return stats
 
-    def _collect_tables(self, stats: Dict[str, Any]) -> None:
+    def _collect_tables(
+        self,
+        stats: Dict[str, Any]
+    ) -> None:
         """
         Collect table statistics.
         """
@@ -527,7 +551,10 @@ class StatisticsAPI:
         except Exception as error:
             stats["tables"]["error"] = str(error)
 
-    def _collect_collections(self, stats: Dict[str, Any]) -> None:
+    def _collect_collections(
+        self,
+        stats: Dict[str, Any]
+    ) -> None:
         """
         Collect collection statistics.
         """

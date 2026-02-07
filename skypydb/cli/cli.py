@@ -3,7 +3,10 @@ Cli for Skypydb.
 """
 
 from io import BytesIO
-from pathlib import Path
+from pathlib import (
+    Path,
+    PurePosixPath
+)
 from urllib.error import (
     HTTPError,
     URLError
@@ -13,7 +16,6 @@ from urllib.request import (
     urlopen
 )
 from zipfile import ZipFile
-from pathlib import PurePosixPath
 import subprocess
 import shutil
 import typer
@@ -58,6 +60,13 @@ class SkypyCLI:
         self.gitignore_entry = gitignore_entry
         self.cwd = cwd
 
+    def _find_npm(self):
+        """
+        Locate the npm executable, handling common platform-specific names.
+        """
+
+        return shutil.which("npm") or shutil.which("npm.cmd")
+
     def launch_dashboard(
         self,
         api_port: int = 8000,
@@ -85,7 +94,7 @@ class SkypyCLI:
             ),
         ]
 
-        npm_path = shutil.which("npm") or shutil.which("npm.cmd")
+        npm_path = self._find_npm()
         if not npm_path:
             print("[yellow]npm was not found in PATH. Please install Node.js/npm and try again.[/yellow]")
             return
@@ -113,10 +122,21 @@ class SkypyCLI:
             if not next_bin.exists() and not next_cmd.exists():
                 print("[yellow]Installing dashboard dependencies.[/yellow]")
                 install_process = subprocess.Popen(
-                    [npm_path,
-                    "install"
-                ], cwd=str(dashboard_dir))
+                    [
+                        npm_path,
+                        "install"
+                    ],
+                    cwd=str(dashboard_dir)
+                )
                 install_process.wait()
+                if install_process.returncode != 0:
+                    print(
+                        "[red]Failed to install dashboard dependencies. "
+                        "Please check the npm output above and try again.[/red]"
+                    )
+                    if api_process.poll() is None:
+                        api_process.terminate()
+                    return
 
             print(f"[green]Starting dashboard on port {dashboard_port}[/green]")
             dashboard_process = subprocess.Popen(
