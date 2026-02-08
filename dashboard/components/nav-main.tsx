@@ -1,9 +1,8 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { type Icon } from "@tabler/icons-react"
+import { IconCirclePlusFilled, IconMail, type Icon } from "@tabler/icons-react"
 
+import { Button } from "@/components/ui/button"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -21,34 +20,37 @@ export function NavMain({
     icon?: Icon
   }[]
 }) {
-  const pathname = usePathname()
-
   return (
     <SidebarGroup>
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
-          {items.map((item) => {
-            const isActive = pathname === item.url
-            return (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton 
-                  tooltip={item.title} 
-                  asChild
-                  isActive={isActive}
-                  className={`w-full h-11 transition-colors text-base ${
-                    isActive 
-                      ? "bg-white text-black dark:bg-white dark:text-black" 
-                      : "hover:bg-white hover:text-black dark:hover:bg-white dark:hover:text-black"
-                  }`}
-                >
-                  <Link href={item.url} className="flex items-center gap-3 px-3">
-                    {item.icon && <item.icon className="size-5" />}
-                    <span className="font-medium">{item.title}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            )
-          })}
+          <SidebarMenuItem className="flex items-center gap-2">
+            <SidebarMenuButton
+              tooltip="Quick Create"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground active:bg-primary/90 active:text-primary-foreground min-w-8 duration-200 ease-linear"
+            >
+              <IconCirclePlusFilled />
+              <span>Quick Create</span>
+            </SidebarMenuButton>
+            <Button
+              size="icon"
+              className="size-8 group-data-[collapsible=icon]:opacity-0"
+              variant="outline"
+            >
+              <IconMail />
+              <span className="sr-only">Inbox</span>
+            </Button>
+          </SidebarMenuItem>
+        </SidebarMenu>
+        <SidebarMenu>
+          {items.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton tooltip={item.title}>
+                {item.icon && <item.icon />}
+                <span>{item.title}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

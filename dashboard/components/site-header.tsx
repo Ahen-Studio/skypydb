@@ -1,36 +1,100 @@
+"use client"
+
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { SidebarTrigger } from "@/components/ui/sidebar"
-import { ThemeToggle } from "@/components/theme-toggle"
+import {
+  ChevronDown,
+  User
+} from "lucide-react"
+import {
+  Button
+} from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu"
+import {
+  Separator
+} from "@/components/ui/separator"
 
-interface SiteHeaderProps {
-  title?: string
-}
-
-export function SiteHeader({ title = "Dashboard" }: SiteHeaderProps) {
+export function SiteHeader() {
   return (
-    <header className="flex h-(--header-height) shrink-0 items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
-      <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6" suppressHydrationWarning>
-        <SidebarTrigger className="-ml-1" />
-        <Separator
-          orientation="vertical"
-          className="mx-2 data-[orientation=vertical]:h-4"
-        />
-        <h1 className="text-base font-medium">{title}</h1>
-        <div className="ml-auto flex items-center gap-2" suppressHydrationWarning>
-          <ThemeToggle />
-          <Button variant="ghost" asChild size="sm" className="hidden sm:flex">
-            <Link
-              href="https://github.com/Ahen-Studio/skypy-db"
-              rel="noopener noreferrer"
-              target="_blank"
-              className="dark:text-foreground"
-            >
-              GitHub
-            </Link>
-          </Button>
+    <header className="flex shrink-0 flex-col border-b">
+      <div className="flex h-(--header-height) w-full flex-wrap items-center gap-3 px-4 lg:gap-4 lg:px-6">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
+            <img
+              src="/favicon.ico"
+              alt="Chroma"
+              className="h-5 w-5"
+            />
+            <span className="text-sm font-medium text-foreground">Skypydb</span>
+          </div>
+          <Separator
+            orientation="vertical"
+            className="mx-1 hidden h-4 sm:flex"
+          />
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1 px-2 text-foreground"
+                >
+                  <User className="size-4" />
+                  <span>Local Host</span>
+                  <ChevronDown className="size-3 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" sideOffset={8}>
+                <DropdownMenuItem>This is a local session</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
+        <div className="ml-auto flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          <Link
+            href="https://github.com/Ahen-Studio/skypy-db"
+            className="text-foreground/80 transition-colors hover:text-foreground"
+          >
+            Github
+          </Link>
+          <Link
+            href="https://ahen.mintlify.app/getting-started/getting_started"
+            className="text-foreground/80 transition-colors hover:text-foreground"
+          >
+            Docs
+          </Link>
+        </div>
+      </div>
+      <div className="flex w-full items-center gap-6 px-4 pb-2 text-sm lg:px-6">
+        <Link
+          href="#"
+          className="border-b-2 border-foreground pb-2 text-foreground"
+          aria-current="page"
+        >
+          Health
+        </Link>
+        <Link
+          href="#"
+          className="pb-2 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Table
+        </Link>
+        <Link
+          href="#"
+          className="pb-2 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Collection
+        </Link>
+        <Link
+          href="#"
+          className="pb-2 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          Logs
+        </Link>
       </div>
     </header>
   )
