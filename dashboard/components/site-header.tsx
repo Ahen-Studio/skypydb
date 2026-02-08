@@ -1,24 +1,21 @@
 "use client"
 
 import Link from "next/link"
-import {
-  ChevronDown,
-  User
-} from "lucide-react"
-import {
-  Button
-} from "@/components/ui/button"
+import { ChevronDown, Moon, Sun, User } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  Separator
-} from "@/components/ui/separator"
+import { Separator } from "@/components/ui/separator"
+import { useTheme } from "next-themes"
 
 export function SiteHeader() {
+  const { setTheme, resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
+
   return (
     <header className="flex shrink-0 flex-col border-b">
       <div className="flex h-(--header-height) w-full flex-wrap items-center gap-3 px-4 lg:gap-4 lg:px-6">
@@ -67,6 +64,16 @@ export function SiteHeader() {
           >
             Docs
           </Link>
+          <Button
+            type="button"
+            variant="ghost"
+            size="xs"
+            className="h-8 gap- px-2 text-foreground"
+           onClick={() => setTheme(isDark ? "light" : "dark")}
+          >
+            {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
+            <span className="text-xs font-medium">Theme</span>
+          </Button>
         </div>
       </div>
       <div className="flex w-full items-center gap-6 px-4 pb-2 text-sm lg:px-6">
