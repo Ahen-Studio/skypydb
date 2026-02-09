@@ -49,16 +49,8 @@ class SysGet:
 
         schema = load_schema()
 
-        created_tables = {}
-        table_names = schema.get_all_table_names()
-
-        for table_name in table_names:
-            table_def = schema.get_table_definition(table_name)
-            if table_def is None:
-                continue
-            if self.db.table_exists(table_name):
-                created_tables[table_name] = Table(self.db, table_name)
-                continue
-            self.db.create_table(table_name, table_def)
-            created_tables[table_name] = Table(self.db, table_name)
-        return created_tables
+        table_names = self.db.get_or_create_table(schema)
+        return {
+            name: Table(self.db, name)
+            for name in table_names
+        }

@@ -40,7 +40,7 @@ class SkypyCLI:
         skypydb_folder: str = "db",
         generated_folder: str = "_generated",
         schema_file_name: str = "schema.py",
-        repo_zip_url: str = "https://github.com/Ahen-Studio/skypy-db/archive/refs/heads/main.zip",
+        repo_zip_url: str = "https://github.com/Ahen-Studio/the-skypydb-dashboard/archive/refs/heads/main.zip",
         repo_dashboard_path: str = "dashboard",
         gitignore_path: str = ".gitignore",
         gitignore_entry: str = ".env.local",

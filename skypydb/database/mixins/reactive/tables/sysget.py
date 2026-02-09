@@ -7,12 +7,17 @@ from typing import (
     List,
     Dict,
     Any,
-    Optional
+    Optional,
+    TYPE_CHECKING
 )
 from skypydb.errors import TableNotFoundError
 from skypydb.security.validation import InputValidator
 from skypydb.database.mixins.reactive.tables.audit import AuditTable
 from skypydb.database.mixins.reactive.encryption import Encryption
+from skypydb.database.mixins.reactive.tables.syscreate import SysCreate
+
+if TYPE_CHECKING:
+    from skypydb.schema.mixins.schema.sysschema import SysSchema
 
 class SysGet:
     def __init__(
@@ -31,6 +36,7 @@ class SysGet:
 
         self.audit = AuditTable(conn=self.conn)
         self.encryption = encryption
+        self.syscreate = SysCreate(conn=self.conn)
 
     def get_all_tables_names(self) -> List[str]:
         """
@@ -89,3 +95,35 @@ class SysGet:
             else:
                 results.append(row_dict)
         return results
+
+    def get_or_create_table(
+        self,
+        schema: "SysSchema"
+    ) -> Dict[str, str]:
+        """
+        Get existing tables from schema or create them if missing.
+
+        Args:
+            schema: SysSchema instance containing table definitions
+
+        Returns:
+            Dictionary mapping table names to table name strings
+
+        Example:
+            tables = client.get_or_create_table()
+            users_table = tables["users"]
+        """
+
+        created_tables = {}
+        table_names = schema.get_all_table_names()
+
+        for table_name in table_names:
+            table_def = schema.get_table_definition(table_name)
+            if table_def is None:
+                continue
+            if self.audit.table_exists(table_name):
+                created_tables[table_name] = table_name
+                continue
+            self.syscreate.create_table(table_name, table_def)
+            created_tables[table_name] = table_name
+        return created_tables
