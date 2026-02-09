@@ -1,6 +1,6 @@
 <div align="center">
- <img alt="Skypydb" width="auto" height="auto" src="https://github.com/amichyrpi/skypy-db/blob/main/docs/logo/dark.svg#gh-light-mode-only">
- <img alt="Skypydb" width="auto" height="auto" src="https://github.com/amichyrpi/skypy-db/blob/main/docs/logo/dark.svg#gh-dark-mode-only">
+ <img alt="Skypydb" width="auto" height="auto" src="https://github.com/Ahen-Studio/skypydb/blob/main/docs/logo/dark.svg#gh-light-mode-only">
+ <img alt="Skypydb" width="auto" height="auto" src="https://github.com/Ahen-Studio/skypydb/blob/main/docs/logo/dark.svg#gh-dark-mode-only">
 </div>
 
 <p align="center">
