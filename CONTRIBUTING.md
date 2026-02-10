@@ -6,7 +6,7 @@ This repository is governed by [the Contributor Covenant Code of Conduct](https:
 
 ## Whant to contribute to the dashboard
 
-Go to the [dashboard](https://github.com/Ahen-Studio/the-skypydb-dashboard) and an start work on it.
+Go to the [dashboard](https://github.com/Ahen-Studio/the-skypydb-dashboard) and start work on it.
 
 ## Where to start.
 We welcome everyone who likes to contribute to Skypydb.
