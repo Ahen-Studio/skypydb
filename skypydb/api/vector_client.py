@@ -3,9 +3,13 @@ Vector Client API for Skypydb.
 """
 
 import os
-from typing import Dict
+from typing import (
+    Any,
+    Dict,
+    Optional
+)
 from skypydb.database.vector_db import VectorDatabase
-from skypydb.embeddings.ollama import OllamaEmbedding
+from skypydb.embeddings import get_embedding_function
 from skypydb.api.collection import Collection
 from skypydb.database.database_linker import DatabaseLinker
 from skypydb.api.mixins.vector import (
@@ -30,23 +34,29 @@ class VectorClient(
     def __init__(
         self,
         path: str = "./db/_generated/vector.db",
-        embedding_model: str = "mxbai-embed-large",
-        ollama_base_url: str = "http://localhost:11434"
+        embedding_provider: str = "ollama",
+        embedding_model_config: Optional[Dict[str, Any]] = None
     ):
         """
         Initialize Vector Client.
 
         Args:
             path: Path to the database file. Defaults to ./db/_generated/vector.db
-            embedding_model: Ollama model to use for embeddings (default: mxbai-embed-large)
-            ollama_base_url: Base URL for Ollama API (default: http://localhost:11434)
+            embedding_provider: Embedding provider (ollama, openai, sentence-transformers)
+            embedding_model_config: Provider-specific config dictionary.
 
         Example:
             # Basic usage with defaults
             client = skypydb.VectorClient()
 
-            # With custom embedding model
-            client = skypydb.VectorClient(embedding_model="mxbai-embed-large")
+            # With explicit provider config
+            client = skypydb.VectorClient(
+                embedding_provider="openai",
+                embedding_model_config={
+                    "api_key": "your-openai-api-key",
+                    "model": "text-embedding-3-small"
+                }
+            )
         """
 
         # constant to define the path to the database file
@@ -57,11 +67,16 @@ class VectorClient(
             os.makedirs(db_dir, exist_ok=True)
 
         self.path = DB_PATH
+        if embedding_model_config is not None and not isinstance(embedding_model_config, dict):
+            raise TypeError("embedding_model_config must be a dictionary when provided.")
+
+        provider = embedding_provider.lower().strip().replace("_", "-")
+        model_config: Dict[str, Any] = dict(embedding_model_config or {})
 
         # set up embedding function
-        self._embedding_function = OllamaEmbedding(
-            model=embedding_model,
-            base_url=ollama_base_url
+        self._embedding_function = get_embedding_function(
+            provider=provider,
+            **model_config
         )
 
         self.database_linker = DatabaseLinker()

@@ -5,7 +5,7 @@
 
 <p align="center">
     <b>Skypydb - Open Source Reactive and Vector Embeddings Database</b>. <br />
-    The better way to build Python logging system! And adding memory to a LLM.
+    The better way to build Python logging system! And adding memory to an LLM.
 </p>
 
 <div align="center">
@@ -50,8 +50,7 @@ pip install skypydb # python database
 
 ## TODO
 
-- [ ] Add Sentence Transformers provider for embeddings
-- [ ] Add OpenAI provider for embeddings
+- [ ] Refactor the embeddings module
 
 ## What's next!
 

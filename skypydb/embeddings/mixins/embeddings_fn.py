@@ -6,11 +6,27 @@ from typing import (
     List,
     Optional
 )
-from skypydb.embeddings.mixins.sysget import SysGet
 
 class EmbeddingsFn:
-    def __init__(self) -> None:
-        self._dimension: Optional[int] = None
+    def __init__(
+        self,
+        dimension: Optional[int] = None
+    ) -> None:
+        self._dimension = dimension
+
+    def _get_embedding(
+        self,
+        text: str
+    ) -> List[float]:
+        """
+        Get embedding for a single text.
+
+        Concrete embedding providers should implement this method.
+        """
+
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement `_get_embedding`."
+        )
 
     def embed(
         self,
@@ -25,13 +41,10 @@ class EmbeddingsFn:
         Returns:
             List of embedding vectors
         """
-
-        self.sysget = SysGet()
-
-        embeddings = []
+        embeddings: List[List[float]] = []
 
         for text in texts:
-            embedding = self.sysget._get_embedding(text)
+            embedding = self._get_embedding(text)
             embeddings.append(embedding)
             # cache the dimension from the first embedding
             if self._dimension is None:
@@ -48,4 +61,19 @@ class EmbeddingsFn:
             None if no embedding has been generated yet.
         """
 
+        return self._dimension
+
+    def get_dimension(
+        self
+    ) -> int:
+        """
+        Get embedding dimension, generating a test embedding if needed.
+
+        Returns:
+            The dimension of embeddings produced by this model.
+        """
+
+        if self._dimension is None:
+            test_embedding = self._get_embedding("test")
+            self._dimension = len(test_embedding)
         return self._dimension

@@ -19,6 +19,8 @@ from skypydb.security import (
 )
 from skypydb.embeddings import (
     OllamaEmbedding,
+    OpenAIEmbedding,
+    SentenceTransformerEmbedding,
     get_embedding_function
 )
 
@@ -37,5 +39,7 @@ __all__ = [
     "EncryptionError",
     "create_encryption_manager",
     "OllamaEmbedding",
+    "OpenAIEmbedding",
+    "SentenceTransformerEmbedding",
     "get_embedding_function"
 ]

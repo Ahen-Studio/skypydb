@@ -3,7 +3,6 @@ Module containing the Utils class, which is used to make the embed class callabl
 """
 
 from typing import List
-from skypydb.embeddings.mixins import EmbeddingsFn
 
 class Utils:
     def __call__(
@@ -19,6 +18,5 @@ class Utils:
         Returns:
             List of embedding vectors
         """
-        
-        self.embeddingfn = EmbeddingsFn()
-        return self.embeddingfn.embed(texts)
+
+        return self.embed(texts)
