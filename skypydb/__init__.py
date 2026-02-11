@@ -24,7 +24,7 @@ from skypydb.embeddings import (
     get_embedding_function
 )
 
-__version__ = "1.0.0"
+__version__ = "0.1.11"
 
 __all__ = [
     "ReactiveClient",
