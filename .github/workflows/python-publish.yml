@@ -17,7 +17,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.9"
 
       - id: pkg
         name: Read version from pyproject.toml
@@ -36,7 +36,6 @@ jobs:
         run: |
           TAG="${{ github.ref_name }}"
           VER="${{ steps.pkg.outputs.version }}"
-          # accepte "1.0.0" ou "v1.0.0"
           if [ "$TAG" != "$VER" ] && [ "$TAG" != "v$VER" ]; then
             echo "Tag ($TAG) does not match pyproject version ($VER)."
             exit 1
@@ -59,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
-      id-token: write   # requis Trusted Publishing (OIDC)
+      id-token: write
       contents: read
     steps:
       - uses: actions/download-artifact@v4
