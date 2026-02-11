@@ -62,7 +62,7 @@ class DatabaseLinker:
 
         search_root = root or Path.cwd()
         discovered: List[Dict[str, str]] = []
-        pattern = f"**/{self.magic}/*.bin"
+        pattern = f"**/{self.magic.decode('utf-8')}/*.bin"
         for metadata_file in search_root.glob(pattern):
             if not metadata_file.is_file():
                 continue
