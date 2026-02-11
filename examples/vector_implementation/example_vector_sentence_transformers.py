@@ -11,7 +11,7 @@ client = skypydb.VectorClient(
 # Create a collection
 collection = client.get_or_create_collection("my-documents")
 
-# Add documents (automatically embedded using Ollama)
+# Add documents
 collection.add(
     documents=["This is document1", "This is document2"],
     metadatas=[{"source": "notion"}, {"source": "google-docs"}],
