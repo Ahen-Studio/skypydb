@@ -2,7 +2,6 @@
 Database link metadata utilities for dashboard auto-discovery.
 """
 
-import sqlite3
 import struct
 from pathlib import Path
 from typing import (
@@ -13,57 +12,52 @@ from typing import (
 )
 
 class DatabaseLinker:
+    """
+    Manages database link metadata for automatic discovery and classification.
+
+    The DatabaseLinker class handles the creation, reading, and discovery of binary
+    metadata files that store information about database paths and their types.
+    This enables dashboard applications to automatically discover and categorize
+    databases without requiring explicit configuration.
+    """
+
     def __init__(
         self,
         folder: str = "link",
-        binary_file_type: str = {"reactive": "reactivetype.bin", "vector": "vectortype.bin"},
+        binary_file_type: Dict[str, str] = {"reactive": "reactivetype.bin", "vector": "vectortype.bin"},
         magic: bytes = b"SKYPYLINKER"
     ):
+        """
+        Initialize the DatabaseLinker with custom configuration.
+
+        Args:
+            folder: Name of the sidecar folder to store metadata files. This folder is created adjacent to database files. Defaults to "link".
+            binary_file_type: Mapping from database type to metadata filename. Defaults to {"reactive": "reactivetype.bin", "vector": "vectortype.bin"}.
+            magic: Magic bytes for file validation and identification. Must be 10 bytes. Defaults to b"SKYPYLINKER". Changing this affects discovery behavior.
+        """
+
         self.folder = folder
         self.binary_file_type = binary_file_type
         self.magic = magic
-        
-    def detect_database_type(
-        self,
-        path: str
-    ) -> str:
-        """
-        Detect database type by inspecting SQLite schema.
-        """
-
-        db_path = self._resolve_db_path(path)
-        if not db_path.exists():
-            return "reactive"
-
-        conn = sqlite3.connect(str(db_path), check_same_thread=False)
-        conn.row_factory = sqlite3.Row
-        try:
-            cursor = conn.cursor()
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            tables = [row["name"] for row in cursor.fetchall()]
-            table_names = {name.lower() for name in tables}
-            if "_vector_collections" in table_names:
-                return "vector"
-
-            vector_columns = {"embedding", "embedding_id", "vector", "vector_id"}
-
-            for table_name in tables:
-                cursor.execute(f"PRAGMA table_info([{table_name}])")
-                columns = {row["name"].lower() for row in cursor.fetchall()}
-                if columns.intersection(vector_columns):
-                    return "vector"
-        except sqlite3.Error:
-            return "reactive"
-        finally:
-            conn.close()
-        return "reactive"
 
     def discover_database_links(
         self,
         root: Optional[Path] = None
     ) -> List[Dict[str, str]]:
         """
-        Discover all DB link metadata binaries from a root folder recursively.
+        Recursively discover all database link metadata files from a root folder.
+
+        This method searches for binary metadata files matching the pattern
+        **/SKYPYLINKER/*.bin and decodes them to extract database information.
+
+        Args:
+            root: Root directory to start searching from. Defaults to the current working directory. If None, uses Path.cwd().
+
+        Returns:
+            List: List of dictionaries, each containing:
+            type: Database type ("reactive" or "vector")
+            path: Full path to the database file
+            metadata_file: Full path to the metadata binary file
         """
 
         search_root = root or Path.cwd()
@@ -82,7 +76,20 @@ class DatabaseLinker:
         db_type: Optional[str] = None
     ) -> Dict[str, str]:
         """
-        Create/update a sidecar link folder and binary metadata file for a DB.
+        Create or update a sidecar link folder and binary metadata file for a database.
+
+        This method creates the metadata directory structure and writes a binary
+        metadata file containing the database path and type. If metadata already
+        exists for the given database, the path is preserved and deduplicated.
+
+        Args:
+            path: Path to the database file. Can be absolute or relative.
+            db_type: Explicit database type ("reactive" or "vector"). If not provided, the type will be auto-detected by inspecting the database schema.
+
+        Returns:
+            Dict[str, str]: Dictionary containing:
+            type: The database type used
+            path: The normalized absolute path to the database
         """
 
         resolved_db_path = self._resolve_db_path(path)
@@ -119,6 +126,19 @@ class DatabaseLinker:
         self,
         path: str
     ) -> Path:
+        """
+        Resolve a database path to an absolute Path object.
+
+        Converts relative paths to absolute paths by joining with the current
+        working directory, then resolves any symbolic links or path components.
+
+        Args:
+            path: Database path as a string, either absolute or relative.
+
+        Returns:
+            Path: Resolved absolute Path object pointing to the database file.
+        """
+
         db_path = Path(path)
         return db_path if db_path.is_absolute() else (Path.cwd() / db_path).resolve()
 
@@ -127,6 +147,21 @@ class DatabaseLinker:
         db_path: Path,
         db_type: str
     ) -> Path:
+        """
+        Get the path to the metadata file for a database.
+
+        Constructs the metadata file path by creating a link folder in the
+        same directory as the database and appending the appropriate binary
+        filename based on the database type.
+
+        Args:
+            db_path: Path to the database file.
+            db_type: Database type ("reactive" or "vector").
+
+        Returns:
+            Path: Full path to the metadata binary file.
+        """
+
         link_dir = db_path.parent / self.folder
         return link_dir / self.binary_file_type[db_type]
 
@@ -135,6 +170,20 @@ class DatabaseLinker:
         db_type: str,
         db_paths: List[str]
     ) -> bytes:
+        """
+        Encode database metadata into a binary payload.
+
+        Args:
+            db_type: Database type ("reactive" or "vector").
+            db_paths: List of database file paths to encode.
+
+        Returns:
+            bytes: Complete binary payload suitable for writing to a file.
+
+        Raises:
+            ValueError: If db_type is not "reactive" or "vector".
+        """
+
         type_code = 1 if db_type == "reactive" else 2
         payload = bytearray()
         payload.extend(self.magic)
@@ -149,6 +198,27 @@ class DatabaseLinker:
         self,
         raw: bytes
     ) -> Optional[Tuple[str, List[str]]]:
+        """
+        Decode a binary payload into database metadata.
+
+        Parses binary data created by _encode_binary_payload and extracts
+        the database type and associated paths.
+
+        Args:
+            raw: Raw binary data from a metadata file.
+
+        Returns:
+            Optional[Tuple[str, List[str]]]: Tuple of (db_type, db_paths) if decoding is successful, None if the data is invalid or corrupted.
+            db_type: "reactive" or "vector"
+            db_paths: List of database file paths
+
+        Validation:
+            Checks magic header matches
+            Verifies type code is valid (1 or 2)
+            Ensures all path data fits within the payload
+            Validates UTF-8 encoding for all paths
+        """
+
         if len(raw) < len(self.magic) + 5 or not raw.startswith(self.magic):
             return None
 
@@ -182,6 +252,22 @@ class DatabaseLinker:
         self,
         path: Path
     ) -> List[Dict[str, str]]:
+        """
+        Read and parse a database link metadata file.
+
+        Reads a binary metadata file, decodes its contents, and returns a list
+        of database entries with their metadata file path.
+
+        Args:
+            path: Path to the metadata binary file.
+
+        Returns:
+            List[Dict[str, str]]: List of database entries, each containing:
+            type: Database type ("reactive" or "vector")
+            path: Database file path
+            metadata_file: Path to this metadata file
+        """
+
         try:
             raw = path.read_bytes()
         except OSError:
