@@ -14,6 +14,7 @@ from typing import (
 from dataclasses import dataclass
 from skypydb.database.reactive_db import ReactiveDatabase
 from skypydb.database.vector_db import VectorDatabase
+from skypydb.database.database_linker import DatabaseLinker
 
 @dataclass
 class TableInfo:
@@ -56,7 +57,8 @@ class DatabaseConnection:
     @staticmethod
     def _resolve_db_path(
         env_key: str,
-        default_relative: str
+        default_relative: str,
+        db_type: str
     ) -> str:
         """
         Resolve a database path from env, normalizing to an absolute path.
@@ -67,6 +69,15 @@ class DatabaseConnection:
         if raw:
             path = Path(raw)
             return str(path if path.is_absolute() else (base / path).resolve())
+
+        discovered = DatabaseConnection.discover_links()
+        for item in discovered:
+            if item.get("type") != db_type:
+                continue
+            candidate = Path(item.get("path", ""))
+            if candidate.exists():
+                return str(candidate.resolve())
+
         default_path = (base / default_relative).resolve()
         if default_path.exists():
             return str(default_path)
@@ -77,6 +88,15 @@ class DatabaseConnection:
             if candidates:
                 return str(candidates[0].resolve())
         return str(default_path)
+
+    @staticmethod
+    def discover_links() -> List[Dict[str, str]]:
+        """
+        Discover database link metadata from current working directory.
+        """
+
+        database_linker = DatabaseLinker()
+        return database_linker.discover_database_links(Path.cwd())
 
     @staticmethod
     def _require_existing(path: str, label: str) -> None:
@@ -98,7 +118,8 @@ class DatabaseConnection:
 
         path = DatabaseConnection._resolve_db_path(
             "SKYPYDB_PATH",
-            "db/_generated/skypydb.db"
+            "db/_generated/skypydb.db",
+            "reactive"
         )
         DatabaseConnection._require_existing(path, "Main")
         return ReactiveDatabase(path)
@@ -111,10 +132,23 @@ class DatabaseConnection:
 
         path = DatabaseConnection._resolve_db_path(
             "SKYPYDB_VECTOR_PATH",
-            "db/_generated/vector.db"
+            "db/_generated/vector.db",
+            "vector"
         )
         DatabaseConnection._require_existing(path, "Vector")
         return VectorDatabase(path)
+
+class LinksAPI:
+    """
+    API for database type/path discovery metadata.
+    """
+
+    def list_all(self) -> List[Dict[str, str]]:
+        """
+        List discovered DB links from the project root.
+        """
+
+        return DatabaseConnection.discover_links()
 
 class HealthAPI:
     """
@@ -634,6 +668,7 @@ class DashboardAPI:
         self.tables = TableAPI()
         self.vector = VectorAPI()
         self.statistics = StatisticsAPI()
+        self.links = LinksAPI()
 
     def get_summary(self) -> Dict[str, Any]:
         """
@@ -652,5 +687,6 @@ class DashboardAPI:
                 "tables": stats["tables"],
                 "collections": stats["collections"]
             },
-            "health_details": health["databases"]
+            "health_details": health["databases"],
+            "database_links": self.links.list_all()
         }

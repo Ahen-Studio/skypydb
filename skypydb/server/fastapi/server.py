@@ -90,6 +90,17 @@ async def get_statistics(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/api/databaselinks")
+async def get_database_links():
+    """
+    Get discovered database type/path links from project root.
+    """
+
+    try:
+        return dashboard_api.links.list_all()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/tables")
 async def list_tables(
     x_skypydb_path: Optional[str] = Header(None)
@@ -251,6 +262,7 @@ if __name__ == "__main__":
     print("  - GET  /api/health")
     print("  - GET  /api/summary")
     print("  - GET  /api/statistics")
+    print("  - GET  /api/databaselinks")
     print("  - GET  /api/tables")
     print("  - GET  /api/tables/{name}/schema")
     print("  - GET  /api/tables/{name}/data")

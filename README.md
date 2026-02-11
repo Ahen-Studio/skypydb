@@ -47,6 +47,10 @@ pip install skypydb # python database
 
 - Cross-platform: Windows, Linux, MacOS
 
+## TODO
+
+- [ ] Add OpenAI provider for embeddings
+
 ## What's next!
 
 - give us ideas!

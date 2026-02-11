@@ -5,6 +5,7 @@ Client API for Skypydb.
 import os
 from typing import Optional
 from skypydb.database.reactive_db import ReactiveDatabase
+from skypydb.database.database_linker import DatabaseLinker
 from skypydb.api.mixins.reactive import (
     SysCreate,
     SysGet,
@@ -66,6 +67,8 @@ class ReactiveClient(
         if db_dir and not os.path.exists(db_dir):
             os.makedirs(db_dir, exist_ok=True)
 
+        self.database_linker = DatabaseLinker()
+
         self.path = DB_PATH
         self.db = ReactiveDatabase(
             DB_PATH,
@@ -73,6 +76,7 @@ class ReactiveClient(
             salt=salt,
             encrypted_fields=encrypted_fields
         )
+        self.database_linker.ensure_db_link_metadata(DB_PATH, db_type="reactive")
 
     def close(self) -> None:
         """
