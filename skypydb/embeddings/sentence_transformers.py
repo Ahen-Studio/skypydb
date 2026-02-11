@@ -55,8 +55,12 @@ class SentenceTransformerEmbedding(
         self,
         text: str
     ) -> List[float]:
-
-        return self.embed([text])[0]
+        vectors = self._model.encode(
+            [text],
+            convert_to_numpy=False,
+            normalize_embeddings=self.normalize_embeddings
+        )
+        return self._to_list(vectors[0])
 
     @staticmethod
     def _to_list(vector: Any) -> List[float]:
