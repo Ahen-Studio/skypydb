@@ -26,8 +26,11 @@ pip install skypydb # python database
 # pip install -r requirements.txt
 ```
 
-> [!NOTE]
-> While waiting for mem0 to merge the changes necessary for skypydb to function, you can still use mem0 with skypydb by downloading the mem0 folder and placing every file in the correct directory in the mem0 installation folder.
+```bash
+cargo add skypydb # rust client
+# or download from the source
+# git clone https://github.com/Ahen-Studio/skypydb.git
+```
 
 ## Features
 
@@ -85,6 +88,10 @@ skypydb dev
 ```
 
 - run this command in your terminal
+
+## Rust
+
+- use the rust client to interact with your database. examples are in the rust folder
 
 ## API
 
