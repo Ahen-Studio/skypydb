@@ -54,11 +54,13 @@ cargo add skypydb # rust client
 
 ## Rust
 
-- use the rust client to interact with your database. examples are in the rust folder
+- use the rust client to interact with your database. examples are in the [rust](https://github.com/Ahen-Studio/skypydb/tree/main/rust) folder
 
 ## TODO
 
 - [ ] Test the rust client
+- [ ] Fix all the issues present in the rust client
+- [ ] Build the dashboard with python and rust server api support
 - [x] Code a rust client
 
 ## What's next!
