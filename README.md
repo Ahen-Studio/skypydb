@@ -5,7 +5,7 @@
 
 <p align="center">
     <b>Skypydb - Open Source Reactive and Vector Embeddings Database</b>. <br />
-    The better way to build Python logging system! And adding memory to an LLM.
+    The better way to build Python and Rust logging system! And adding memory to an LLM.
 </p>
 
 <div align="center">
@@ -52,6 +52,10 @@ cargo add skypydb # rust client
 
 - Cross-platform: Windows, Linux, MacOS
 
+## Rust
+
+- use the rust client to interact with your database. examples are in the rust folder
+
 ## TODO
 
 - [ ] Code a rust client
@@ -88,10 +92,6 @@ skypydb dev
 ```
 
 - run this command in your terminal
-
-## Rust
-
-- use the rust client to interact with your database. examples are in the rust folder
 
 ## API
 

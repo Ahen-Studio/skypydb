@@ -6,6 +6,8 @@
 
 ## Supported Versions
 
+### Python
+
 - Beta versions are released at 0.1.x
 
 - Stable versions are released at 1.0.x
@@ -27,6 +29,20 @@
 | 0.1.3   | :white_check_mark: |
 | 0.1.2   | :x:                |
 | 0.1.1   | :x:                |
+
+### Rust
+
+- Beta versions are released at 0.1.x
+
+- Stable versions are released at 1.0.x
+
+| Stable  | Supported          |
+| ------- | ------------------ |
+| 1.0.0   | :white_check_mark: |
+
+| Beta    | Supported          |
+| ------- | ------------------ |
+| 0.1.0   | :x:                |
 
 ## Reporting a Vulnerability
 

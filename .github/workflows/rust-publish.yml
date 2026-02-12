@@ -1,0 +1,122 @@
+name: Build & Publish (crates.io)
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  detect-rust-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      has_rust_changes: ${{ steps.detect.outputs.has_rust_changes }}
+      previous_tag: ${{ steps.detect.outputs.previous_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: detect
+        name: Detect rust-client changes in this release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "Manual dispatch: forcing rust publish path."
+            echo "previous_tag=" >> "$GITHUB_OUTPUT"
+            echo "has_rust_changes=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          CURRENT_TAG="${GITHUB_REF_NAME}"
+          PREVIOUS_TAG="$(git tag --sort=-creatordate | grep -Fxv "$CURRENT_TAG" | head -n 1 || true)"
+
+          echo "Current tag: $CURRENT_TAG"
+          echo "Previous tag: ${PREVIOUS_TAG:-<none>}"
+          echo "previous_tag=$PREVIOUS_TAG" >> "$GITHUB_OUTPUT"
+
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "No previous tag found; treating this as rust changes present."
+            echo "has_rust_changes=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          CHANGED_FILES="$(git diff --name-only "$PREVIOUS_TAG" "$CURRENT_TAG" || true)"
+          echo "Changed files between tags:"
+          echo "$CHANGED_FILES"
+
+          if echo "$CHANGED_FILES" | grep -E '^(rust/|Cargo\.toml$|Cargo\.lock$)' >/dev/null 2>&1; then
+            echo "Rust client changes detected."
+            echo "has_rust_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No rust client changes detected."
+            echo "has_rust_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  publish-crates:
+    needs: detect-rust-changes
+    if: needs.detect-rust-changes.outputs.has_rust_changes == 'true'
+    runs-on: ubuntu-latest
+    environment: crates-io
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - id: crate
+        name: Read rust crate version
+        run: |
+          python - << 'PY'
+          import os, tomllib
+          with open("rust/Cargo.toml", "rb") as f:
+              data = tomllib.load(f)
+          version = data["package"]["version"]
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write(f"version={version}\n")
+          print("crate version:", version)
+          PY
+
+      - name: Ensure release tag matches rust crate version
+        if: github.event_name == 'release'
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          VER="${{ steps.crate.outputs.version }}"
+          if [ "$TAG" != "$VER" ] && [ "$TAG" != "v$VER" ]; then
+            echo "Release tag ($TAG) does not match rust crate version ($VER)."
+            exit 1
+          fi
+
+      - name: Ensure crates.io token is configured
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${{ secrets.CRATES_IO_TOKEN }}" ]; then
+            echo "Missing repository/environment secret: CRATES_IO_TOKEN"
+            exit 1
+          fi
+
+      - name: Build publish package (dry run)
+        run: cargo publish --manifest-path rust/Cargo.toml --dry-run --locked
+
+      - name: Publish rust client to crates.io
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+        run: cargo publish --manifest-path rust/Cargo.toml --locked
+
+  skip-notice:
+    needs: detect-rust-changes
+    if: needs.detect-rust-changes.outputs.has_rust_changes != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip publish
+        run: |
+          echo "No rust client changes detected between release tags."
+          echo "Skipping crates.io publish."
