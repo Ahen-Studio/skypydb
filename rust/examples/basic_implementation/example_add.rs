@@ -47,29 +47,35 @@ fn main() -> Result<()> {
         "details" => "Timeout after 30 seconds",
     })?;
 
+    //Search for data in the table
+    let inserted_success = success_table.search(
+        None,
+        json_map! {
+            "id" => success_ids.clone(),
+        },
+    )?;
+    let inserted_warning = warning_table.search(
+        None,
+        json_map! {
+            "id" => warning_ids.clone(),
+        },
+    )?;
+    let inserted_error = error_table.search(
+        None,
+        json_map! {
+            "id" => error_ids.clone(),
+        },
+    )?;
+
     //Print the results
-    if warning_ids.is_empty() {
-        println!("No warning_ids found.");
-    } else {
-        for item in warning_ids {
-            println!("{item}");
-        }
+    for row in inserted_success {
+        println!("  [success] {row:?}");
     }
-
-    if success_ids.is_empty() {
-        println!("No success_ids found.");
-    } else {
-        for item in success_ids {
-            println!("{item}");
-        }
+    for row in inserted_warning {
+        println!("  [warning] {row:?}");
     }
-
-    if error_ids.is_empty() {
-        println!("No error_ids found.");
-    } else {
-        for item in error_ids {
-            println!("{item}");
-        }
+    for row in inserted_error {
+        println!("  [error]   {row:?}");
     }
 
     Ok(())

@@ -72,10 +72,11 @@ cargo add skypydb # rust client
 - use the cli to initialize your database and launch the dashboard with one simple command
 
 ```bash
-cargo run -p skypydb --bin skypydbrust -- dev
-cargo run -p skypydb --bin skypydbrust -- init
-cargo run -p skypydb --bin skypydbrust -- keygen
-cargo run -p skypydb --bin skypydbrust -- dashboard --host 0.0.0.0 --port 8000
+cargo run -p skypydb --bin skypydbrust dev # interactive menu to initialize your database and start the dashboard
+# or use the main commands to initialize your database and launch the dashboard
+cargo run -p skypydb --bin skypydbrust init
+cargo run -p skypydb --bin skypydbrust keygen
+cargo run -p skypydb --bin skypydbrust dashboard
 ```
 
 - run these commands in your terminal
@@ -202,20 +203,34 @@ fn main() -> Result<()> {
     //Adding fonction show earlier
 
     //Search for data in the table
-    let results = success_table.search(
+    let inserted_success = success_table.search(
         None,
         json_map! {
-            "user_id" => "user123",
+            "id" => success_ids.clone(),
+        },
+    )?;
+    let inserted_warning = warning_table.search(
+        None,
+        json_map! {
+            "id" => warning_ids.clone(),
+        },
+    )?;
+    let inserted_error = error_table.search(
+        None,
+        json_map! {
+            "id" => error_ids.clone(),
         },
     )?;
 
     //Print the results
-    if results.is_empty() {
-        println!("No results found.");
-    } else {
-        for item in results {
-            println!("{item}");
-        }
+    for row in inserted_success {
+        println!("  [success] {row:?}");
+    }
+    for row in inserted_warning {
+        println!("  [warning] {row:?}");
+    }
+    for row in inserted_error {
+        println!("  [error]   {row:?}");
     }
 
     Ok(())

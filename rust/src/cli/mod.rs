@@ -1,17 +1,20 @@
 //! Command-line interface for Skypydb.
 
 use std::fs;
-use std::io::Write;
+use std::io::{Cursor, Write};
 use std::path::Path;
-
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
 use clap::{Parser, Subcommand};
 use dialoguer::Select;
-
+use reqwest::Client;
+use zip::ZipArchive;
 use crate::errors::{Result, SkypydbError};
 use crate::security::EncryptionManager;
 use crate::server::run_dashboard_server;
+
+const DASHBOARD_ZIP_URL: &str = "https://github.com/Ahen-Studio/the-skypydb-dashboard/archive/refs/heads/main.zip";
+const DASHBOARD_FOLDER_NAME: &str = "dashboard";
 
 #[derive(Debug, Parser)]
 #[command(
@@ -28,8 +31,13 @@ pub struct Cli {
 pub enum Commands {
     /// Interactive mode.
     Dev,
+
     /// Initialize project files and encryption keys.
     Init,
+
+    /// Print a new encryption key and salt.
+    Keygen,
+
     /// Start dashboard API server.
     Dashboard {
         #[arg(long, default_value = "0.0.0.0")]
@@ -37,15 +45,6 @@ pub enum Commands {
         #[arg(long, default_value_t = 8000)]
         port: u16,
     },
-    /// Alias for dashboard command.
-    Serve {
-        #[arg(long, default_value = "0.0.0.0")]
-        host: String,
-        #[arg(long, default_value_t = 8000)]
-        port: u16,
-    },
-    /// Print a new encryption key and salt.
-    Keygen,
 }
 
 pub async fn run() -> Result<()> {
@@ -53,13 +52,14 @@ pub async fn run() -> Result<()> {
 
     match cli.command.unwrap_or(Commands::Dev) {
         Commands::Dev => run_dev().await,
-        Commands::Init => init_project(),
-        Commands::Dashboard { host, port } | Commands::Serve { host, port } => {
+        Commands::Init => init_project().await,
+        Commands::Dashboard { host, port } => {
             println!("Starting Skypydb dashboard API on http://{host}:{port}");
             run_dashboard_server(&host, port).await
         }
         Commands::Keygen => {
             print_keys()?;
+
             Ok(())
         }
     }
@@ -71,7 +71,6 @@ async fn run_dev() -> Result<()> {
         "launch the dashboard api server",
         "no thanks",
     ];
-
     let choice = Select::new()
         .with_prompt("Welcome to Skypydb! What would you like to do?")
         .items(&options)
@@ -80,18 +79,22 @@ async fn run_dev() -> Result<()> {
         .map_err(|error| SkypydbError::database(error.to_string()))?;
 
     match choice {
-        Some(0) => init_project(),
-        Some(1) => run_dashboard_server("0.0.0.0", 8000).await,
+        Some(0) => init_project().await,
+        Some(1) => {
+            println!("Starting Skypydb dashboard API on http://0.0.0.0:8000");
+            run_dashboard_server("0.0.0.0", 8000).await
+        }
         _ => {
             println!("Exiting.");
+
             Ok(())
         }
     }
 }
 
-fn init_project() -> Result<()> {
+/// Initializes a new Skypydb project. Creates the db directory and writes the schema.rs file.
+async fn init_project() -> Result<()> {
     let cwd = std::env::current_dir().map_err(|error| SkypydbError::database(error.to_string()))?;
-
     let db_dir = cwd.join("db");
     let generated_dir = db_dir.join("_generated");
     let schema_file = db_dir.join("schema.rs");
@@ -106,6 +109,7 @@ fn init_project() -> Result<()> {
 
     write_env_file(&cwd)?;
     update_gitignore(&cwd)?;
+    download_dashboard_folder(&generated_dir).await?;
 
     println!("Initialized project.");
     println!("Write your Skypydb schema in {}", schema_file.display());
@@ -114,31 +118,21 @@ fn init_project() -> Result<()> {
     Ok(())
 }
 
-fn print_keys() -> Result<()> {
-    let encryption_key = EncryptionManager::generate_key();
-    let salt = EncryptionManager::generate_salt(32)?;
-
-    println!("ENCRYPTION_KEY={encryption_key}");
-    println!("SALT_KEY={}", BASE64_STANDARD.encode(salt));
-    Ok(())
-}
-
+/// Writes the encryption key and salt to the .env.local file. Use by the init command.
 fn write_env_file(cwd: &Path) -> Result<()> {
     let encryption_key = EncryptionManager::generate_key();
     let salt = EncryptionManager::generate_salt(32)?;
-
     let content = format!(
         "ENCRYPTION_KEY={encryption_key}\nSALT_KEY={}\n",
         BASE64_STANDARD.encode(salt)
     );
-
     let env_path = cwd.join(".env.local");
     fs::write(env_path, content).map_err(|error| SkypydbError::database(error.to_string()))
 }
 
+/// Updates the .gitignore file to include the .env.local file. Use by the init command.
 fn update_gitignore(cwd: &Path) -> Result<()> {
     let gitignore_path = cwd.join(".gitignore");
-
     let mut lines = if gitignore_path.exists() {
         fs::read_to_string(&gitignore_path)
             .map_err(|error| SkypydbError::database(error.to_string()))?
@@ -148,7 +142,6 @@ fn update_gitignore(cwd: &Path) -> Result<()> {
     } else {
         Vec::new()
     };
-
     if !lines.iter().any(|line| line.trim() == ".env.local") {
         lines.push(".env.local".to_string());
         let mut file = fs::File::create(&gitignore_path)
@@ -165,23 +158,112 @@ fn update_gitignore(cwd: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Returns the schema template. Use by the init command.
 fn schema_template() -> String {
     let mut lines = Vec::<String>::new();
-    lines.push("use skypydb::schema::value;".to_string());
-    lines.push(
-        "use skypydb::{columns, define_schema, define_table, tables, Result, Schema};".to_string(),
-    );
-    lines.push(String::new());
-    lines.push("pub fn build_schema() -> Result<Schema> {".to_string());
-    lines.push("    let example = define_table(columns! {".to_string());
-    lines.push("        \"message\" => value::string(),".to_string());
-    lines.push("        \"source\" => value::optional(value::string()),".to_string());
-    lines.push("    })".to_string());
-    lines.push("    .index(\"by_source\", vec![\"source\"])?;".to_string());
-    lines.push(String::new());
-    lines.push("    Ok(define_schema(tables! {".to_string());
-    lines.push("        \"example\" => example,".to_string());
-    lines.push("    }))".to_string());
-    lines.push("}".to_string());
+    lines.push("//Write your Skypydb schema in this file.".to_string());
     lines.join("\n")
+}
+
+/// Downloads the dashboard folder from GitHub and writes it to db/_generated/dashboard. Use by the init command.
+async fn download_dashboard_folder(generated_dir: &Path) -> Result<()> {
+    let target_root = generated_dir.join(DASHBOARD_FOLDER_NAME);
+    let client = Client::builder()
+        .user_agent("skypydbrust-cli")
+        .build()
+        .map_err(|error| SkypydbError::database(error.to_string()))?;
+    let response = match client.get(DASHBOARD_ZIP_URL).send().await {
+        Ok(response) => response,
+        Err(error) => {
+            println!("Warning: failed to download dashboard folder: {error}");
+            return Ok(());
+        }
+    };
+    if !response.status().is_success() {
+        println!(
+            "Warning: failed to download dashboard folder. HTTP status: {}",
+            response.status()
+        );
+        return Ok(());
+    }
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|error| SkypydbError::database(error.to_string()))?;
+    let mut archive = ZipArchive::new(Cursor::new(bytes))
+        .map_err(|error| SkypydbError::database(error.to_string()))?;
+    let mut created_files = 0_usize;
+    let mut skipped_files = 0_usize;
+
+    for index in 0..archive.len() {
+        let mut entry = archive
+            .by_index(index)
+            .map_err(|error| SkypydbError::database(error.to_string()))?;
+        let normalized = entry.name().replace('\\', "/");
+        let mut parts = normalized.split('/').filter(|part| !part.is_empty());
+        let _repo_root = match parts.next() {
+            Some(value) => value,
+            None => continue,
+        };
+        let dashboard_part = match parts.next() {
+            Some(value) => value,
+            None => continue,
+        };
+        if dashboard_part != DASHBOARD_FOLDER_NAME {
+            continue;
+        }
+        let relative_parts = parts.collect::<Vec<_>>();
+        if relative_parts.is_empty() {
+            continue;
+        }
+        if relative_parts.iter().any(|part| *part == "..") {
+            continue;
+        }
+        let mut target_path = target_root.clone();
+
+        for part in &relative_parts {
+            target_path = target_path.join(part);
+        }
+        if entry.is_dir() {
+            fs::create_dir_all(&target_path)
+                .map_err(|error| SkypydbError::database(error.to_string()))?;
+            continue;
+        }
+        if target_path.exists() {
+            skipped_files += 1;
+            continue;
+        }
+        if let Some(parent) = target_path.parent() {
+            fs::create_dir_all(parent)
+                .map_err(|error| SkypydbError::database(error.to_string()))?;
+        }
+        let mut output_file = fs::File::create(&target_path)
+            .map_err(|error| SkypydbError::database(error.to_string()))?;
+        std::io::copy(&mut entry, &mut output_file)
+            .map_err(|error| SkypydbError::database(error.to_string()))?;
+        created_files += 1;
+    }
+
+    if created_files > 0 {
+        println!("Downloaded dashboard folder to {}", target_root.display());
+    }
+    if skipped_files > 0 {
+        println!(
+            "Skipped {skipped_files} existing file(s) in {}",
+            target_root.display()
+        );
+    }
+
+    Ok(())
+}
+
+/// Prints the encryption key and salt to the console. Use by the keygen command.
+fn print_keys() -> Result<()> {
+    let encryption_key = EncryptionManager::generate_key();
+    let salt = EncryptionManager::generate_salt(32)?;
+
+    println!("ENCRYPTION_KEY={encryption_key}");
+    println!("SALT_KEY={}", BASE64_STANDARD.encode(salt));
+
+    Ok(())
 }
