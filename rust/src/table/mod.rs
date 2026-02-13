@@ -1,7 +1,9 @@
-use serde_json::Value;
+//! Table-level operations for reactive databases.
 
+use serde_json::{Map, Value};
+
+use crate::database::reactive_database::{DataMap, ReactiveDatabase};
 use crate::errors::{Result, SkypydbError};
-use crate::reactive::{DataMap, ReactiveDatabase};
 
 #[derive(Clone)]
 pub struct Table {

@@ -1,28 +1,30 @@
+//! Skypydb Rust library exports.
+
+pub mod api;
 pub mod cli;
-pub mod clients;
-pub mod database_linker;
+pub mod database;
 pub mod embeddings;
 pub mod errors;
-pub mod reactive;
 pub mod schema;
 pub mod security;
 pub mod server;
 pub mod table;
-pub mod vector;
 
-pub use clients::{Collection, ReactiveClient, VectorClient};
-pub use database_linker::{DatabaseLinker, DatabaseType, DbLink, DiscoveredDbLink};
+pub use api::{Collection, ReactiveClient, VectorClient};
+pub use database::database_linker::{DatabaseLinker, DatabaseType, DbLink, DiscoveredDbLink};
+pub use database::reactive_database::{DataMap, ReactiveDatabase};
+pub use database::vector_database::{
+    CollectionInfo, VectorDatabase, VectorGetResult, VectorQueryResult,
+};
 pub use embeddings::{
     get_embedding_function, EmbeddingFunction, OllamaEmbedding, OpenAIEmbedding,
     SentenceTransformerEmbedding,
 };
 pub use errors::{Result, SkypydbError};
-pub use reactive::{DataMap, ReactiveDatabase};
 pub use schema::{define_schema, define_table, value, Schema, TableDefinition, Validator};
 pub use security::{EncryptionManager, InputValidator};
 pub use server::{build_router, run_dashboard_server, DashboardApi};
 pub use table::Table;
-pub use vector::{CollectionInfo, VectorDatabase, VectorGetResult, VectorQueryResult};
 
 #[macro_export]
 macro_rules! columns {

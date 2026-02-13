@@ -1,3 +1,5 @@
+//! Database linker metadata helpers.
+
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 

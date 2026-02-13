@@ -1,3 +1,5 @@
+//! Security helpers for validation and encryption.
+
 use aes_gcm::aead::Aead;
 use aes_gcm::{Aes256Gcm, KeyInit, Nonce};
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;

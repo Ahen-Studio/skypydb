@@ -4,10 +4,12 @@ use std::path::{Path, PathBuf};
 
 use serde_json::{json, Value};
 
-use crate::database_linker::DatabaseLinker;
+use crate::database::database_linker::DatabaseLinker;
+use crate::database::reactive_database::{DataMap, ReactiveDatabase};
+use crate::database::vector_database::{
+    CollectionInfo, VectorDatabase, VectorGetResult, VectorQueryResult,
+};
 use crate::errors::{Result, SkypydbError};
-use crate::reactive::{DataMap, ReactiveDatabase};
-use crate::vector::{VectorDatabase, VectorGetResult, VectorQueryResult};
 
 #[derive(Clone, Default)]
 pub struct DashboardApi {
@@ -66,10 +68,11 @@ impl HealthApi {
     }
 
     fn check_main(&self, status: &mut Value, main_path: Option<&str>) {
-        let database_result = DatabaseConnection::get_main(main_path);
-        let database_status = match database_result {
+        let database_result: Result<ReactiveDatabase> = DatabaseConnection::get_main(main_path);
+        let database_status: Value = match database_result {
             Ok(database) => {
-                let table_count = database.get_all_tables_names().map(|tables| tables.len());
+                let table_count: Result<usize> =
+                    database.get_all_tables_names().map(|tables| tables.len());
                 match table_count {
                     Ok(table_count) => json!({
                         "status": "connected",
@@ -99,10 +102,10 @@ impl HealthApi {
     }
 
     fn check_vector(&self, status: &mut Value, vector_path: Option<&str>) {
-        let database_result = DatabaseConnection::get_vector(vector_path);
-        let database_status = match database_result {
+        let database_result: Result<VectorDatabase> = DatabaseConnection::get_vector(vector_path);
+        let database_status: Value = match database_result {
             Ok(database) => {
-                let collection_count = database
+                let collection_count: Result<usize> = database
                     .list_collections()
                     .map(|collections| collections.len());
                 match collection_count {
@@ -139,10 +142,10 @@ pub struct TableApi;
 
 impl TableApi {
     pub fn list_all(&self, main_path: Option<&str>) -> Result<Value> {
-        let database = DatabaseConnection::get_main(main_path)?;
-        let table_names = database.get_all_tables_names()?;
+        let database: ReactiveDatabase = DatabaseConnection::get_main(main_path)?;
+        let table_names: Vec<String> = database.get_all_tables_names()?;
 
-        let mut result = Vec::new();
+        let mut result: Vec<Value> = Vec::new();
         for table_name in table_names {
             result.push(self.get_info(&database, &table_name));
         }
@@ -151,7 +154,7 @@ impl TableApi {
     }
 
     pub fn get_schema(&self, table_name: &str, main_path: Option<&str>) -> Result<Value> {
-        let database = DatabaseConnection::get_main(main_path)?;
+        let database: ReactiveDatabase = DatabaseConnection::get_main(main_path)?;
 
         Ok(json!({
             "name": table_name,
@@ -167,7 +170,7 @@ impl TableApi {
         offset: usize,
         main_path: Option<&str>,
     ) -> Result<Value> {
-        let database = DatabaseConnection::get_main(main_path)?;
+        let database: ReactiveDatabase = DatabaseConnection::get_main(main_path)?;
         let all_data = database.get_all_data(table_name)?;
         Ok(self.paginate(all_data, limit, offset))
     }
@@ -180,7 +183,7 @@ impl TableApi {
         filters: Option<DataMap>,
         main_path: Option<&str>,
     ) -> Result<Value> {
-        let database = DatabaseConnection::get_main(main_path)?;
+        let database: ReactiveDatabase = DatabaseConnection::get_main(main_path)?;
         let mut results =
             database.search(table_name, query.as_deref(), &filters.unwrap_or_default())?;
 
@@ -196,14 +199,14 @@ impl TableApi {
     }
 
     fn get_info(&self, database: &ReactiveDatabase, table_name: &str) -> Value {
-        let row_count = database
+        let row_count: usize = database
             .get_all_data(table_name)
             .map(|rows| rows.len())
             .unwrap_or_default();
-        let columns = database
+        let columns: Vec<String> = database
             .get_table_columns_names(table_name)
             .unwrap_or_default();
-        let config = database.get_table_config(table_name).ok().flatten();
+        let config: Option<Value> = database.get_table_config(table_name).ok().flatten();
 
         json!({
             "name": table_name,
@@ -237,10 +240,10 @@ pub struct VectorApi;
 
 impl VectorApi {
     pub fn list_all(&self, vector_path: Option<&str>) -> Result<Value> {
-        let database = DatabaseConnection::get_vector(vector_path)?;
-        let collections = database.list_collections()?;
+        let database: VectorDatabase = DatabaseConnection::get_vector(vector_path)?;
+        let collections: Vec<CollectionInfo> = database.list_collections()?;
 
-        let result = collections
+        let result: Vec<Value> = collections
             .into_iter()
             .map(|collection| {
                 let document_count = database.count(&collection.name).unwrap_or_default();
@@ -256,7 +259,7 @@ impl VectorApi {
     }
 
     pub fn get_details(&self, collection_name: &str, vector_path: Option<&str>) -> Value {
-        let database = match DatabaseConnection::get_vector(vector_path) {
+        let database: VectorDatabase = match DatabaseConnection::get_vector(vector_path) {
             Ok(database) => database,
             Err(error) => {
                 return json!({
@@ -296,7 +299,7 @@ impl VectorApi {
         offset: usize,
         vector_path: Option<&str>,
     ) -> Value {
-        let database = match DatabaseConnection::get_vector(vector_path) {
+        let database: VectorDatabase = match DatabaseConnection::get_vector(vector_path) {
             Ok(database) => database,
             Err(error) => {
                 return json!({
@@ -337,7 +340,7 @@ impl VectorApi {
         metadata_filter: Option<Value>,
         vector_path: Option<&str>,
     ) -> Value {
-        let database = match DatabaseConnection::get_vector(vector_path) {
+        let database: VectorDatabase = match DatabaseConnection::get_vector(vector_path) {
             Ok(database) => database,
             Err(error) => {
                 return json!({
@@ -414,24 +417,24 @@ impl VectorApi {
         query_text: &str,
         n_results: usize,
     ) -> Value {
-        let ids = result.ids.first().cloned().unwrap_or_default();
-        let documents = result
+        let ids: Vec<String> = result.ids.first().cloned().unwrap_or_default();
+        let documents: Vec<Option<String>> = result
             .documents
             .as_ref()
             .and_then(|documents| documents.first().cloned())
             .unwrap_or_default();
-        let metadatas = result
+        let metadatas: Vec<Option<Value>> = result
             .metadatas
             .as_ref()
             .and_then(|metadatas| metadatas.first().cloned())
             .unwrap_or_default();
-        let distances = result
+        let distances: Vec<f32> = result
             .distances
             .as_ref()
             .and_then(|distances| distances.first().cloned())
             .unwrap_or_default();
 
-        let mut formatted = Vec::new();
+        let mut formatted: Vec<Value> = Vec::new();
         for (index, id) in ids.iter().enumerate() {
             formatted.push(json!({
                 "id": id,
@@ -473,14 +476,12 @@ impl StatisticsApi {
 
     fn collect_tables(&self, stats: &mut Value, main_path: Option<&str>) {
         let outcome = (|| -> Result<(usize, usize)> {
-            let database = DatabaseConnection::get_main(main_path)?;
-            let table_names = database.get_all_tables_names()?;
-            let total_rows = table_names
-                .iter()
-                .map(|table| database.get_all_data(table).map(|rows| rows.len()))
-                .collect::<Result<Vec<_>>>()?
-                .into_iter()
-                .sum::<usize>();
+            let database: ReactiveDatabase = DatabaseConnection::get_main(main_path)?;
+            let table_names: Vec<String> = database.get_all_tables_names()?;
+            let mut total_rows = 0_usize;
+            for table in &table_names {
+                total_rows += database.get_all_data(table)?.len();
+            }
             Ok((table_names.len(), total_rows))
         })();
 
@@ -501,14 +502,12 @@ impl StatisticsApi {
 
     fn collect_collections(&self, stats: &mut Value, vector_path: Option<&str>) {
         let outcome = (|| -> Result<(usize, usize)> {
-            let database = DatabaseConnection::get_vector(vector_path)?;
-            let collections = database.list_collections()?;
-            let total_documents = collections
-                .iter()
-                .map(|collection| database.count(&collection.name))
-                .collect::<Result<Vec<_>>>()?
-                .into_iter()
-                .sum::<usize>();
+            let database: VectorDatabase = DatabaseConnection::get_vector(vector_path)?;
+            let collections: Vec<CollectionInfo> = database.list_collections()?;
+            let mut total_documents = 0_usize;
+            for collection in &collections {
+                total_documents += database.count(&collection.name)?;
+            }
             Ok((collections.len(), total_documents))
         })();
 
@@ -604,15 +603,19 @@ impl DatabaseConnection {
 
         let generated_dir = resolve_absolute("db/_generated");
         if generated_dir.exists() {
-            let mut candidates = generated_dir
+            let read_dir = generated_dir
                 .read_dir()
-                .map_err(|error| SkypydbError::database(error.to_string()))?
-                .flatten()
-                .map(|entry| entry.path())
-                .filter(|path| {
-                    path.is_file() && path.extension().and_then(|ext| ext.to_str()) == Some("db")
-                })
-                .collect::<Vec<_>>();
+                .map_err(|error| SkypydbError::database(error.to_string()))?;
+            let mut candidates: Vec<PathBuf> = Vec::new();
+            for entry in read_dir {
+                let Ok(entry) = entry else {
+                    continue;
+                };
+                let path = entry.path();
+                if path.is_file() && path.extension().and_then(|ext| ext.to_str()) == Some("db") {
+                    candidates.push(path);
+                }
+            }
             candidates.sort();
             if let Some(first) = candidates.first() {
                 return Ok(first.to_string_lossy().to_string());

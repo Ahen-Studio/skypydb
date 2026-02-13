@@ -1,3 +1,5 @@
+//! Reactive SQLite database implementation.
+
 use std::collections::HashSet;
 use std::path::Path;
 use std::sync::{Arc, Mutex, MutexGuard};
