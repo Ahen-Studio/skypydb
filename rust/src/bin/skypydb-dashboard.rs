@@ -1,3 +1,5 @@
+//! Dashboard server binary entrypoint.
+
 use clap::Parser;
 
 #[derive(Debug, Parser)]

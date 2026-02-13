@@ -1,3 +1,5 @@
+//! Embedding provider implementations and factory helpers.
+
 use std::io::Write;
 use std::process::{Command, Stdio};
 use std::sync::Arc;

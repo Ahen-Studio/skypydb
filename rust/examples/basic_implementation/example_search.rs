@@ -30,7 +30,7 @@ fn main() -> Result<()> {
         println!("No results found.");
     } else {
         for item in results {
-            println!("{item}");
+            println!("{item:?}");
         }
     }
 

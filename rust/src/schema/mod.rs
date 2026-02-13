@@ -1,3 +1,5 @@
+//! Schema builders and validators for reactive tables.
+
 use std::collections::BTreeMap;
 
 use serde_json::{Map, Value};

@@ -1,3 +1,5 @@
+//! Shared error and result types.
+
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 

@@ -12,16 +12,14 @@ fn main() -> Result<()> {
     let _ = from_filename(".env.local");
 
     // Load encryption key from environment. Fail if not found
-    let encryption_key = std::env::var("ENCRYPTION_KEY")
-        .ok_or_else(|| {
-            SkypydbError::validation("Missing ENCRYPTION_KEY. Set it in environment or .env.local.")
-        })?;
+    let encryption_key = std::env::var("ENCRYPTION_KEY").map_err(|_| {
+        SkypydbError::validation("Missing ENCRYPTION_KEY. Set it in environment or .env.local.")
+    })?;
 
     // Load salt key from environment. Fail if not found
-    let salt_encoded = std::env::var("SALT_KEY")
-        .ok_or_else(|| {
-            SkypydbError::validation("Missing SALT_KEY. Set it in environment or .env.local.")
-        })?;
+    let salt_encoded = std::env::var("SALT_KEY").map_err(|_| {
+        SkypydbError::validation("Missing SALT_KEY. Set it in environment or .env.local.")
+    })?;
 
     // Decode salt from base64
     let salt = BASE64_STANDARD
@@ -65,7 +63,7 @@ fn main() -> Result<()> {
     //Print results
     println!("Decrypted results:");
     for result in results {
-        println!("{result}");
+        println!("{result:?}");
     }
 
     Ok(())

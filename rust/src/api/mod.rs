@@ -1,3 +1,5 @@
+//! High-level reactive and vector client APIs.
+
 use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -5,13 +7,15 @@ use std::sync::{Arc, Mutex};
 use chrono::Utc;
 use serde_json::{Map, Value};
 
-use crate::database_linker::{DatabaseLinker, DatabaseType};
+use crate::database::database_linker::{DatabaseLinker, DatabaseType};
+use crate::database::reactive_database::ReactiveDatabase;
+use crate::database::vector_database::{
+    CollectionInfo, VectorDatabase, VectorGetResult, VectorQueryResult,
+};
 use crate::embeddings::{get_embedding_function, EmbeddingFunction};
 use crate::errors::{Result, SkypydbError};
-use crate::reactive::ReactiveDatabase;
 use crate::schema::Schema;
 use crate::table::Table;
-use crate::vector::{CollectionInfo, VectorDatabase, VectorGetResult, VectorQueryResult};
 
 #[derive(Clone)]
 pub struct ReactiveClient {
@@ -68,7 +72,7 @@ impl ReactiveClient {
             )));
         }
 
-        let mut created = HashMap::new();
+        let mut created: HashMap<String, Table> = HashMap::new();
         for table_name in table_names {
             let table_definition = schema.get_table_definition(&table_name).ok_or_else(|| {
                 SkypydbError::validation(format!("Missing table definition for '{table_name}'"))
@@ -82,7 +86,7 @@ impl ReactiveClient {
 
     pub fn get_or_create_tables(&self, schema: &Schema) -> Result<HashMap<String, Table>> {
         let table_names = self.db.get_or_create_tables(schema)?;
-        let mut tables = HashMap::new();
+        let mut tables: HashMap<String, Table> = HashMap::new();
         for table_name in table_names {
             tables.insert(table_name.clone(), Table::new(self.db.clone(), table_name)?);
         }

@@ -24,12 +24,10 @@ fn main() -> Result<()> {
     })?;
 
     //Print the results
-    if deleted.is_empty() {
-        println!("No deleted data found.");
+    if deleted == 0 {
+        println!("No rows deleted.");
     } else {
-        for item in deleted {
-            println!("{item}");
-        }
+        println!("Deleted rows: {deleted}");
     }
 
     Ok(())

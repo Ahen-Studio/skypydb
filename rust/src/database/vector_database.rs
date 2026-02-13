@@ -1,3 +1,5 @@
+//! Vector SQLite database implementation.
+
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::path::Path;
