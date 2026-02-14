@@ -91,15 +91,12 @@ pub fn build_router(api: DashboardApi) -> Router {
 pub async fn run_dashboard_server(host: &str, port: u16) -> Result<()> {
     let api = DashboardApi::new();
     let app = build_router(api);
-
     let address = format!("{host}:{port}");
     let listener = tokio::net::TcpListener::bind(&address)
         .await
         .map_err(|error| SkypydbError::database(error.to_string()))?;
-
     let (shutdown_tx, shutdown_rx) = oneshot::channel::<()>();
     let mut shutdown_tx = Some(shutdown_tx);
-
     let mut server_task = tokio::spawn(async move {
         axum::serve(listener, app)
             .with_graceful_shutdown(async move {
@@ -107,11 +104,9 @@ pub async fn run_dashboard_server(host: &str, port: u16) -> Result<()> {
             })
             .await
     });
-
     let base_url = format!("http://127.0.0.1:{port}");
     wait_for_backend_ready(&base_url).await?;
     check_dashboard_endpoints(&base_url).await?;
-
     let mut frontend: Child = start_dashboard_frontend(3000).await?;
 
     println!("Backend API running on http://{host}:{port}");
@@ -135,18 +130,14 @@ pub async fn run_dashboard_server(host: &str, port: u16) -> Result<()> {
             if let Some(tx) = shutdown_tx.take() {
                 let _ = tx.send(());
             }
-
             let frontend_status = frontend_result
                 .map_err(|error| SkypydbError::database(error.to_string()))?;
-
             let backend_status = server_task
                 .await
                 .map_err(|error| SkypydbError::database(format!("Backend task failed: {error}")))?;
-
             if let Err(error) = backend_status {
                 return Err(SkypydbError::database(error.to_string()));
             }
-
             if frontend_status.success() {
                 Ok(())
             } else {
@@ -160,18 +151,17 @@ pub async fn run_dashboard_server(host: &str, port: u16) -> Result<()> {
             if let Some(tx) = shutdown_tx.take() {
                 let _ = tx.send(());
             }
-
             if frontend.id().is_some() {
                 let _ = frontend.kill().await;
                 let _ = frontend.wait().await;
             }
-
             let backend_status = server_task
                 .await
                 .map_err(|error| SkypydbError::database(format!("Backend task failed: {error}")))?;
 
             backend_status
                 .map_err(|error| SkypydbError::database(error.to_string()))?;
+
             Ok(())
         }
     }
@@ -182,8 +172,8 @@ async fn wait_for_backend_ready(base_url: &str) -> Result<()> {
         .timeout(Duration::from_secs(3))
         .build()
         .map_err(|error| SkypydbError::database(error.to_string()))?;
-
     let deadline = tokio::time::Instant::now() + Duration::from_secs(15);
+
     loop {
         let response = client.get(format!("{base_url}/api/health")).send().await;
         if let Ok(response) = response {
@@ -191,7 +181,6 @@ async fn wait_for_backend_ready(base_url: &str) -> Result<()> {
                 return Ok(());
             }
         }
-
         if tokio::time::Instant::now() >= deadline {
             return Err(SkypydbError::database(
                 "Backend API did not become ready within 15 seconds.",
@@ -236,7 +225,6 @@ async fn check_dashboard_endpoints(base_url: &str) -> Result<()> {
         None,
     )
     .await?;
-
     let tables_payload = request_endpoint_json(
         &client,
         Method::GET,
@@ -251,7 +239,6 @@ async fn check_dashboard_endpoints(base_url: &str) -> Result<()> {
         None,
     )
     .await?;
-
     if let Some(table_name) = first_item_name(&tables_payload) {
         request_endpoint_json(
             &client,
@@ -331,11 +318,9 @@ async fn request_endpoint_json(
     if let Some(body) = body {
         request = request.json(&body);
     }
-
     let response = request.send().await.map_err(|error| {
         SkypydbError::database(format!("Endpoint check failed for {url}: {error}"))
     })?;
-
     if response.status() == reqwest::StatusCode::NOT_FOUND
         || response.status() == reqwest::StatusCode::METHOD_NOT_ALLOWED
     {
@@ -361,7 +346,6 @@ async fn start_dashboard_frontend(frontend_port: u16) -> Result<Child> {
             dashboard_dir.display()
         )));
     }
-
     let npm_executable = find_npm_executable().await.ok_or_else(|| {
         SkypydbError::database(
             "npm was not found in PATH. Install Node.js/npm to launch the dashboard frontend.",
@@ -381,7 +365,6 @@ async fn start_dashboard_frontend(frontend_port: u16) -> Result<Child> {
         .stdin(Stdio::null())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit());
-
     command
         .spawn()
         .map_err(|error| SkypydbError::database(format!("Failed to start frontend: {error}")))
@@ -395,7 +378,6 @@ async fn find_npm_executable() -> Option<String> {
             .stderr(Stdio::null())
             .status()
             .await;
-
         if matches!(status, Ok(status) if status.success()) {
             return Some(candidate.to_string());
         }
@@ -409,7 +391,6 @@ async fn ensure_frontend_dependencies(dashboard_dir: &StdPath, npm_executable: &
         .join("node_modules")
         .join(".bin")
         .join("next.cmd");
-
     if next_unix.exists() || next_windows.exists() {
         return Ok(());
     }
@@ -418,7 +399,6 @@ async fn ensure_frontend_dependencies(dashboard_dir: &StdPath, npm_executable: &
         "Installing dashboard dependencies in {} ...",
         dashboard_dir.display()
     );
-
     let status: std::io::Result<std::process::ExitStatus> = Command::new(npm_executable)
         .arg("install")
         .current_dir(dashboard_dir)
@@ -427,10 +407,8 @@ async fn ensure_frontend_dependencies(dashboard_dir: &StdPath, npm_executable: &
         .stderr(Stdio::inherit())
         .status()
         .await;
-
     let status = status
         .map_err(|error| SkypydbError::database(format!("Failed to run npm install: {error}")))?;
-
     if !status.success() {
         return Err(SkypydbError::database(format!(
             "Dashboard dependency installation failed with status: {status}"
@@ -554,6 +532,7 @@ async fn get_collection_details(
     headers: HeaderMap,
 ) -> ApiResponse {
     let vector_path = header_value(&headers, "x-skypydb-vector-path");
+
     Ok(Json(
         state
             .api
