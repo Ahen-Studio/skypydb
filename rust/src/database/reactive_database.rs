@@ -130,7 +130,8 @@ impl ReactiveDatabase {
             )));
         }
         let conn = self.lock_connection()?;
-        let mut statement = conn.prepare(&format!("PRAGMA table_info([{table_name}])"))?;
+        let table_identifier = quote_identifier(&table_name);
+        let mut statement = conn.prepare(&format!("PRAGMA table_info({table_identifier})"))?;
         let mut rows = statement.query([])?;
         let mut columns = Vec::new();
 
@@ -149,7 +150,8 @@ impl ReactiveDatabase {
             )));
         }
         let conn = self.lock_connection()?;
-        let query = format!("SELECT * FROM [{table_name}]");
+        let table_identifier = quote_identifier(&table_name);
+        let query = format!("SELECT * FROM {table_identifier}");
         let mut statement = conn.prepare(&query)?;
         let column_names = statement
             .column_names()
@@ -181,7 +183,8 @@ impl ReactiveDatabase {
         let mut configured_definition = table_definition.clone();
         configured_definition.table_name = Some(table_name.clone());
         let sql_columns = configured_definition.get_sql_columns().join(", ");
-        let create_query = format!("CREATE TABLE [{table_name}] ({sql_columns})");
+        let table_identifier = quote_identifier(&table_name);
+        let create_query = format!("CREATE TABLE {table_identifier} ({sql_columns})");
         let conn = self.lock_connection()?;
         conn.execute(&create_query, [])?;
 
@@ -203,7 +206,8 @@ impl ReactiveDatabase {
             )));
         }
         let conn = self.lock_connection()?;
-        let query = format!("DROP TABLE [{table_name}]");
+        let table_identifier = quote_identifier(&table_name);
+        let query = format!("DROP TABLE {table_identifier}");
         conn.execute(&query, [])?;
         drop(conn);
 
@@ -396,10 +400,12 @@ impl ReactiveDatabase {
             .join(", ");
         let column_names = columns
             .iter()
-            .map(|column| format!("[{column}]"))
+            .map(|column| quote_identifier(column))
             .collect::<Vec<_>>()
             .join(", ");
-        let query = format!("INSERT INTO [{table_name}] ({column_names}) VALUES ({placeholders})");
+        let table_identifier = quote_identifier(&table_name);
+        let query =
+            format!("INSERT INTO {table_identifier} ({column_names}) VALUES ({placeholders})");
         let params = columns
             .iter()
             .map(|column| {
@@ -430,20 +436,31 @@ impl ReactiveDatabase {
                 "Table '{table_name}' not found"
             )));
         }
+        let columns = self.get_table_columns_names(&table_name)?;
+        let known_columns = columns.iter().cloned().collect::<HashSet<_>>();
+
+        for column in filters.keys() {
+            if !known_columns.contains(column) {
+                return Err(SkypydbError::invalid_search(format!(
+                    "Unknown filter column '{column}' for table '{table_name}'"
+                )));
+            }
+        }
         let mut conditions = Vec::new();
         let mut params = Vec::<SqlValue>::new();
         if let Some(index_value) = index {
             let sanitized_index = InputValidator::sanitize_string(index_value);
-            let columns = self.get_table_columns_names(&table_name)?;
             let non_standard_columns = columns
-                .into_iter()
-                .filter(|column| column != "id" && column != "created_at")
+                .iter()
+                .filter(|column| column.as_str() != "id" && column.as_str() != "created_at")
+                .cloned()
                 .collect::<Vec<_>>();
             if !non_standard_columns.is_empty() {
                 let mut index_conditions = Vec::new();
 
                 for column in non_standard_columns {
-                    index_conditions.push(format!("[{column}] = ?"));
+                    let column_identifier = quote_identifier(&column);
+                    index_conditions.push(format!("{column_identifier} = ?"));
                     params.push(SqlValue::Text(sanitized_index.clone()));
                 }
                 conditions.push(format!("({})", index_conditions.join(" OR ")));
@@ -451,6 +468,8 @@ impl ReactiveDatabase {
         }
 
         for (column, value) in &filters {
+            let column_identifier = quote_identifier(column);
+
             match value {
                 Value::Array(values) => {
                     if values.is_empty() {
@@ -462,17 +481,17 @@ impl ReactiveDatabase {
                         .take(values.len())
                         .collect::<Vec<_>>()
                         .join(", ");
-                    conditions.push(format!("[{column}] IN ({placeholders})"));
+                    conditions.push(format!("{column_identifier} IN ({placeholders})"));
 
                     for item in values {
                         params.push(json_value_to_filter_sql(item));
                     }
                 }
                 Value::Null => {
-                    conditions.push(format!("[{column}] IS NULL"));
+                    conditions.push(format!("{column_identifier} IS NULL"));
                 }
                 other => {
-                    conditions.push(format!("[{column}] = ?"));
+                    conditions.push(format!("{column_identifier} = ?"));
                     params.push(json_value_to_filter_sql(other));
                 }
             }
@@ -482,7 +501,8 @@ impl ReactiveDatabase {
         } else {
             conditions.join(" AND ")
         };
-        let query = format!("SELECT * FROM [{table_name}] WHERE {where_clause}");
+        let table_identifier = quote_identifier(&table_name);
+        let query = format!("SELECT * FROM {table_identifier} WHERE {where_clause}");
         let conn = self.lock_connection()?;
         let mut statement = conn.prepare(&query)?;
         let column_names = statement
@@ -514,10 +534,22 @@ impl ReactiveDatabase {
                 "Cannot delete without filters. Use filters to specify which rows to delete.",
             ));
         }
+        let known_columns = self
+            .get_table_columns_names(&table_name)?
+            .into_iter()
+            .collect::<HashSet<_>>();
+        for column in filters.keys() {
+            if !known_columns.contains(column) {
+                return Err(SkypydbError::validation(format!(
+                    "Unknown filter column '{column}' for table '{table_name}'"
+                )));
+            }
+        }
         let mut conditions = Vec::new();
         let mut params = Vec::<SqlValue>::new();
 
         for (column, value) in &filters {
+            let column_identifier = quote_identifier(column);
             match value {
                 Value::Array(values) => {
                     if values.is_empty() {
@@ -529,23 +561,24 @@ impl ReactiveDatabase {
                         .take(values.len())
                         .collect::<Vec<_>>()
                         .join(", ");
-                    conditions.push(format!("[{column}] IN ({placeholders})"));
+                    conditions.push(format!("{column_identifier} IN ({placeholders})"));
 
                     for item in values {
                         params.push(json_value_to_filter_sql(item));
                     }
                 }
                 Value::Null => {
-                    conditions.push(format!("[{column}] IS NULL"));
+                    conditions.push(format!("{column_identifier} IS NULL"));
                 }
                 other => {
-                    conditions.push(format!("[{column}] = ?"));
+                    conditions.push(format!("{column_identifier} = ?"));
                     params.push(json_value_to_filter_sql(other));
                 }
             }
         }
         let where_clause = conditions.join(" AND ");
-        let query = format!("DELETE FROM [{table_name}] WHERE {where_clause}");
+        let table_identifier = quote_identifier(&table_name);
+        let query = format!("DELETE FROM {table_identifier} WHERE {where_clause}");
         let conn = self.lock_connection()?;
         let affected_rows = conn.execute(&query, params_from_iter(params.iter()))?;
 
@@ -558,6 +591,7 @@ impl ReactiveDatabase {
             .get_table_columns_names(&table_name)?
             .into_iter()
             .collect::<HashSet<_>>();
+        let table_identifier = quote_identifier(&table_name);
         let conn = self.lock_connection()?;
 
         for column in columns {
@@ -568,8 +602,9 @@ impl ReactiveDatabase {
             {
                 continue;
             }
+            let column_identifier = quote_identifier(&validated_column);
             conn.execute(
-                &format!("ALTER TABLE [{table_name}] ADD COLUMN [{validated_column}] TEXT"),
+                &format!("ALTER TABLE {table_identifier} ADD COLUMN {column_identifier} TEXT"),
                 [],
             )?;
         }
@@ -696,6 +731,10 @@ fn map_validator_to_type_name(validator: &Validator) -> &'static str {
     }
 }
 
+fn quote_identifier(identifier: &str) -> String {
+    format!("\"{}\"", identifier.replace('"', "\"\""))
+}
+
 fn json_value_to_insert_sql(value: &Value) -> SqlValue {
     match value {
         Value::Null => SqlValue::Null,
@@ -794,5 +833,56 @@ mod tests {
             )
             .expect("delete");
         assert_eq!(deleted, 1);
+    }
+
+    #[test]
+    fn search_rejects_unknown_filter_columns() {
+        let dir = tempdir().expect("tempdir");
+        let db_path = dir.path().join("reactive.db");
+        let db = ReactiveDatabase::new(db_path.to_string_lossy(), None, None, None).expect("db");
+        let table = define_table(columns! {
+            "name" => value::string(),
+        });
+        let schema = define_schema(std::collections::BTreeMap::from([(
+            "users".to_string(),
+            table,
+        )]));
+        db.get_or_create_tables(&schema).expect("create tables");
+        let error = db
+            .search(
+                "users",
+                None,
+                &DataMap::from_iter([(String::from("unknown"), serde_json::json!("Ada"))]),
+            )
+            .expect_err("unknown filter column should fail");
+        assert_eq!(error.code(), "SKY201");
+        assert!(error
+            .to_string()
+            .contains("Unknown filter column 'unknown'"));
+    }
+
+    #[test]
+    fn delete_rejects_unknown_filter_columns() {
+        let dir = tempdir().expect("tempdir");
+        let db_path = dir.path().join("reactive.db");
+        let db = ReactiveDatabase::new(db_path.to_string_lossy(), None, None, None).expect("db");
+        let table = define_table(columns! {
+            "name" => value::string(),
+        });
+        let schema = define_schema(std::collections::BTreeMap::from([(
+            "users".to_string(),
+            table,
+        )]));
+        db.get_or_create_tables(&schema).expect("create tables");
+        let error = db
+            .delete_rows(
+                "users",
+                &DataMap::from_iter([(String::from("unknown"), serde_json::json!("Ada"))]),
+            )
+            .expect_err("unknown filter column should fail");
+        assert_eq!(error.code(), "SKY302");
+        assert!(error
+            .to_string()
+            .contains("Unknown filter column 'unknown'"));
     }
 }

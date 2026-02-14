@@ -59,7 +59,6 @@ cargo add skypydb # rust client
 ## TODO
 
 - [ ] Fix all the issues present in the rust client
-- [ ] Refactor the rust client except the cli
 - [ ] Build the dashboard with python and rust server api support
 
 ## What's next!

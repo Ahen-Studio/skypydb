@@ -1,15 +1,13 @@
 //! Dashboard API for monitoring Skypydb databases.
 
-use std::path::{Path, PathBuf};
-
-use serde_json::{json, Value};
-
 use crate::database::database_linker::DatabaseLinker;
 use crate::database::reactive_database::{DataMap, ReactiveDatabase};
 use crate::database::vector_database::{
     CollectionInfo, VectorDatabase, VectorGetResult, VectorQueryResult,
 };
 use crate::errors::{Result, SkypydbError};
+use serde_json::{json, Value};
+use std::path::{Path, PathBuf};
 
 #[derive(Clone, Default)]
 pub struct DashboardApi {
@@ -73,6 +71,7 @@ impl HealthApi {
             Ok(database) => {
                 let table_count: Result<usize> =
                     database.get_all_tables_names().map(|tables| tables.len());
+
                 match table_count {
                     Ok(table_count) => json!({
                         "status": "connected",
@@ -95,7 +94,6 @@ impl HealthApi {
                 })
             }
         };
-
         if let Some(databases) = status.get_mut("databases").and_then(Value::as_object_mut) {
             databases.insert("main".to_string(), database_status);
         }
@@ -108,6 +106,7 @@ impl HealthApi {
                 let collection_count: Result<usize> = database
                     .list_collections()
                     .map(|collections| collections.len());
+
                 match collection_count {
                     Ok(collection_count) => json!({
                         "status": "connected",
@@ -130,7 +129,6 @@ impl HealthApi {
                 })
             }
         };
-
         if let Some(databases) = status.get_mut("databases").and_then(Value::as_object_mut) {
             databases.insert("vector".to_string(), database_status);
         }
@@ -144,8 +142,8 @@ impl TableApi {
     pub fn list_all(&self, main_path: Option<&str>) -> Result<Value> {
         let database: ReactiveDatabase = DatabaseConnection::get_main(main_path)?;
         let table_names: Vec<String> = database.get_all_tables_names()?;
-
         let mut result: Vec<Value> = Vec::new();
+
         for table_name in table_names {
             result.push(self.get_info(&database, &table_name));
         }
@@ -172,6 +170,7 @@ impl TableApi {
     ) -> Result<Value> {
         let database: ReactiveDatabase = DatabaseConnection::get_main(main_path)?;
         let all_data = database.get_all_data(table_name)?;
+
         Ok(self.paginate(all_data, limit, offset))
     }
 
@@ -186,7 +185,6 @@ impl TableApi {
         let database: ReactiveDatabase = DatabaseConnection::get_main(main_path)?;
         let mut results =
             database.search(table_name, query.as_deref(), &filters.unwrap_or_default())?;
-
         if limit > 0 && results.len() > limit {
             results.truncate(limit);
         }
@@ -242,7 +240,6 @@ impl VectorApi {
     pub fn list_all(&self, vector_path: Option<&str>) -> Result<Value> {
         let database: VectorDatabase = DatabaseConnection::get_vector(vector_path)?;
         let collections: Vec<CollectionInfo> = database.list_collections()?;
-
         let result: Vec<Value> = collections
             .into_iter()
             .map(|collection| {
@@ -311,7 +308,6 @@ impl VectorApi {
                 });
             }
         };
-
         let result = database.get(
             collection_name,
             document_ids,
@@ -350,7 +346,6 @@ impl VectorApi {
                 });
             }
         };
-
         let result = database.query(
             collection_name,
             None,
@@ -383,7 +378,6 @@ impl VectorApi {
         } else {
             (offset + limit).min(total)
         };
-
         let ids = result.ids[start..end].to_vec();
         let documents = result
             .documents
@@ -433,8 +427,8 @@ impl VectorApi {
             .as_ref()
             .and_then(|distances| distances.first().cloned())
             .unwrap_or_default();
-
         let mut formatted: Vec<Value> = Vec::new();
+
         for (index, id) in ids.iter().enumerate() {
             formatted.push(json!({
                 "id": id,
@@ -479,9 +473,11 @@ impl StatisticsApi {
             let database: ReactiveDatabase = DatabaseConnection::get_main(main_path)?;
             let table_names: Vec<String> = database.get_all_tables_names()?;
             let mut total_rows = 0_usize;
+
             for table in &table_names {
                 total_rows += database.get_all_data(table)?.len();
             }
+
             Ok((table_names.len(), total_rows))
         })();
 
@@ -505,9 +501,11 @@ impl StatisticsApi {
             let database: VectorDatabase = DatabaseConnection::get_vector(vector_path)?;
             let collections: Vec<CollectionInfo> = database.list_collections()?;
             let mut total_documents = 0_usize;
+
             for collection in &collections {
                 total_documents += database.count(&collection.name)?;
             }
+
             Ok((collections.len(), total_documents))
         })();
 
@@ -580,12 +578,11 @@ impl DatabaseConnection {
         if let Some(path) = override_path {
             return Ok(resolve_absolute(path).to_string_lossy().to_string());
         }
-
         if let Ok(path) = std::env::var(env_key) {
             return Ok(resolve_absolute(path).to_string_lossy().to_string());
         }
-
         let linker = DatabaseLinker::default();
+
         for entry in linker.discover_database_links(Some(Path::new("."))) {
             if entry.db_type != db_type {
                 continue;
@@ -595,18 +592,17 @@ impl DatabaseConnection {
                 return Ok(candidate.to_string_lossy().to_string());
             }
         }
-
         let default_path = resolve_absolute(default_relative);
         if default_path.exists() {
             return Ok(default_path.to_string_lossy().to_string());
         }
-
         let generated_dir = resolve_absolute("db/_generated");
         if generated_dir.exists() {
             let read_dir = generated_dir
                 .read_dir()
                 .map_err(|error| SkypydbError::database(error.to_string()))?;
             let mut candidates: Vec<PathBuf> = Vec::new();
+
             for entry in read_dir {
                 let Ok(entry) = entry else {
                     continue;
@@ -631,6 +627,7 @@ impl DatabaseConnection {
                 "{label} database file not found at: {path}. Set the correct path with request headers or environment variables."
             )));
         }
+
         Ok(())
     }
 }
@@ -640,7 +637,6 @@ fn resolve_absolute(path: impl AsRef<Path>) -> PathBuf {
     if path.is_absolute() {
         return path.to_path_buf();
     }
-
     let cwd = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
     let candidate = cwd.join(path);
     candidate.canonicalize().unwrap_or(candidate)
