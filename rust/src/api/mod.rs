@@ -1,12 +1,5 @@
 //! High-level reactive and vector client APIs.
 
-use std::collections::{BTreeMap, HashMap};
-use std::path::Path;
-use std::sync::{Arc, Mutex};
-
-use chrono::Utc;
-use serde_json::{Map, Value};
-
 use crate::database::database_linker::{DatabaseLinker, DatabaseType};
 use crate::database::reactive_database::ReactiveDatabase;
 use crate::database::vector_database::{
@@ -16,6 +9,11 @@ use crate::embeddings::{get_embedding_function, EmbeddingFunction};
 use crate::errors::{Result, SkypydbError};
 use crate::schema::Schema;
 use crate::table::Table;
+use chrono::Utc;
+use serde_json::{Map, Value};
+use std::collections::{BTreeMap, HashMap};
+use std::path::Path;
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
 pub struct ReactiveClient {
@@ -37,7 +35,6 @@ impl ReactiveClient {
                 std::fs::create_dir_all(parent)?;
             }
         }
-
         let db = ReactiveDatabase::new(path.clone(), encryption_key, salt, encrypted_fields)?;
         let database_linker = DatabaseLinker::default();
         database_linker.ensure_db_link_metadata(&path, DatabaseType::Reactive)?;
@@ -64,15 +61,14 @@ impl ReactiveClient {
             .filter(|table_name| self.db.table_exists(table_name))
             .cloned()
             .collect::<Vec<_>>();
-
         if !existing_tables.is_empty() {
             return Err(SkypydbError::table_already_exists(format!(
                 "Tables already exist in the database: {}",
                 existing_tables.join(", ")
             )));
         }
-
         let mut created: HashMap<String, Table> = HashMap::new();
+
         for table_name in table_names {
             let table_definition = schema.get_table_definition(&table_name).ok_or_else(|| {
                 SkypydbError::validation(format!("Missing table definition for '{table_name}'"))
@@ -87,9 +83,11 @@ impl ReactiveClient {
     pub fn get_or_create_tables(&self, schema: &Schema) -> Result<HashMap<String, Table>> {
         let table_names = self.db.get_or_create_tables(schema)?;
         let mut tables: HashMap<String, Table> = HashMap::new();
+
         for table_name in table_names {
             tables.insert(table_name.clone(), Table::new(self.db.clone(), table_name)?);
         }
+
         Ok(tables)
     }
 
@@ -137,12 +135,10 @@ impl VectorClient {
                 std::fs::create_dir_all(parent)?;
             }
         }
-
         let embedding_function = get_embedding_function(
             &embedding_provider.to_lowercase().trim().replace('_', "-"),
             embedding_model_config.unwrap_or_default(),
         )?;
-
         let db = VectorDatabase::new(path.clone(), Some(embedding_function))?;
         let database_linker = DatabaseLinker::default();
         database_linker.ensure_db_link_metadata(&path, DatabaseType::Vector)?;
@@ -165,7 +161,6 @@ impl VectorClient {
                 std::fs::create_dir_all(parent)?;
             }
         }
-
         let db = VectorDatabase::new(path.clone(), Some(embedding_function))?;
         let database_linker = DatabaseLinker::default();
         database_linker.ensure_db_link_metadata(&path, DatabaseType::Vector)?;
@@ -223,6 +218,7 @@ impl VectorClient {
         metadata: Option<Value>,
     ) -> Result<Collection> {
         let _ = self.db.get_or_create_collection(name, metadata)?;
+
         self.collection_from_db(name)
     }
 
@@ -242,6 +238,7 @@ impl VectorClient {
         if let Ok(mut cache) = self.collections.lock() {
             cache.remove(name);
         }
+
         Ok(())
     }
 
@@ -250,6 +247,7 @@ impl VectorClient {
         if let Ok(mut cache) = self.collections.lock() {
             cache.clear();
         }
+
         Ok(true)
     }
 
@@ -275,17 +273,16 @@ impl VectorClient {
         let mut cache = self.collections.lock().map_err(|error| {
             SkypydbError::database(format!("Collection cache lock poisoned: {error}"))
         })?;
-
         if let Some(existing) = cache.get(&info.name).cloned() {
             return Ok(existing);
         }
-
         let collection = Collection {
             db: self.db.clone(),
             name: info.name.clone(),
             metadata: info.metadata,
         };
         cache.insert(info.name, collection.clone());
+
         Ok(collection)
     }
 }
@@ -382,10 +379,10 @@ impl Collection {
                 "delete() requires at least one of 'ids', 'where_filter', or 'where_document' to be provided.",
             ));
         }
-
         let _ = self
             .db
             .delete(&self.name, ids, where_filter, where_document)?;
+
         Ok(())
     }
 
