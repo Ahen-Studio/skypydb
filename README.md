@@ -14,7 +14,7 @@
 [![Crates.io](https://img.shields.io/crates/v/skypydb)](https://crates.io/crates/skypydb)
 [![PyPI](https://img.shields.io/pypi/v/skypydb.svg)](https://pypi.org/project/skypydb/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/Ahen-Studio/skypydb/blob/main/LICENSE)
-[![Docs](https://img.shields.io/badge/Docs-blue.svg)](https://ahen.mintlify.app/)
+[![Docs](https://img.shields.io/badge/Docs-blue.svg)](https://docs.ahen-studio.com/)
 
 </div>
 
@@ -456,7 +456,7 @@ else:
         print(user_success_log)
 ```
 
-Learn more on our [Docs](https://ahen.mintlify.app/)
+Learn more on our [Docs](https://docs.ahen-studio.com/)
 
 ## All Thanks To Our Contributors:
 
