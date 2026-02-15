@@ -14,7 +14,7 @@ use std::path::{Component, Path, PathBuf};
 use zip::ZipArchive;
 
 const DASHBOARD_ZIP_URL: &str =
-    "https://github.com/Ahen-Studio/the-skypydb-dashboard/archive/refs/heads/main.zip";
+    "https://github.com/Ahen-Studio/skypydb/archive/refs/heads/main.zip";
 const DASHBOARD_FOLDER_NAME: &str = "dashboard";
 
 #[derive(Debug, Parser)]
@@ -114,7 +114,7 @@ async fn init_project() -> Result<()> {
 
     println!("Initialized project.");
     println!("Write your Skypydb schema in {}", schema_file.display());
-    println!("Give us feedback at https://github.com/Ahen-Studio/skypy-db/issues");
+    println!("Give us feedback at https://github.com/Ahen-Studio/skypydb/issues");
 
     Ok(())
 }
